@@ -1,257 +1,257 @@
-# Архитектура и структура репозитория ArduMotorBlimp
+# ArduMotorBlimp Repository Structure and Architecture
 
-**Версия:** 1.1  
-**Дата:** 1 июля 2026  
-**Репозиторий:** https://github.com/DaniK-51/ArduMotorBlimp  
-**Автор:** DaniK-51 (Daniyar)  
-**Лицензия:** GPL-3.0
-
----
-
-## 📋 Содержание
-
-1. [Введение](#введение)
-2. [Обзор проекта](#обзор-проекта)
-3. [Структура репозитория](#структура-репозитория)
-4. [Основные компоненты](#основные-компоненты)
-5. [Система сборки](#система-сборки)
-6. [Режимы полета](#режимы-полета)
-7. [Система управления](#система-управления)
-8. [Телеметрия и связь](#телеметрия-и-связь)
-9. [Безопасность](#безопасность)
-10. [Параметры](#параметры)
-11. [Интеграция с ArduPilot](#интеграция-с-ardupilot)
-12. [Связь с проектом the_blimp_swp](#связь-с-проектом-the_blimp_swp)
+**Version:** 1.1  
+**Date:** July 1, 2026  
+**Repository:** https://github.com/DaniK-51/ArduMotorBlimp  
+**Author:** DaniK-51 (Daniyar)  
+**License:** GPL-3.0
 
 ---
 
-## Введение
+## Table of Contents
 
-### Назначение документа
-
-Этот документ описывает архитектуру, структуру и компоненты репозитория **ArduMotorBlimp** — кастомной реализации транспортного средства типа "дирижабль" (Blimp) для платформы ArduPilot.
-
-### Целевая аудитория
-
-- Разработчики системы управления
-- Инженеры по интеграции ArduPilot
-- Члены команды проекта
-- Ревьюеры кода
-
----
-
-## Обзор проекта
-
-### Что такое ArduMotorBlimp?
-
-**ArduMotorBlimp** — это специализированная реализация дирижабля (Lighter-Than-Air vehicle) на базе официальной платформы ArduPilot. Репозиторий содержит начальное состояние официального модуля `Blimp` с кастомными доработками.
-
-### Ключевые характеристики
-
-| Параметр | Значение |
-|----------|----------|
-| **Тип аппарата** | Моторизованный дирижабль |
-| **Языки** | C++ (96.5%), C (3.2%), Python (0.3%) |
-| **Лицензия** | GPL-3.0 |
-| **База** | Официальный репозиторий ArduPilot |
-| **Статус** | Начальная разработка (Initial commit) |
-
-### Основные возможности
-
-- ✅ Поддержка стандартных режимов полета ArduPilot
-- ✅ Интеграция с MAVLink протоколом
-- ✅ Система безопасности и failsafe
-- ✅ Поддержка различных типов моторных конфигураций
-- ✅ Логирование телеметрии
-- ✅ EKF (Extended Kalman Filter) проверка
+1. [Introduction](#introduction)
+2. [Project Overview](#project-overview)
+3. [Repository Structure](#repository-structure)
+4. [Main Components](#main-components)
+5. [Build System](#build-system)
+6. [Flight Modes](#flight-modes)
+7. [Control System](#control-system)
+8. [Telemetry and Communication](#telemetry-and-communication)
+9. [Safety](#safety)
+10. [Parameters](#parameters)
+11. [Integration with ArduPilot](#integration-with-ardupilot)
+12. [Connection with the_blimp_swp Project](#connection-with-the_blimp_swp-project)
 
 ---
 
-## Структура репозитория
+## Introduction
 
-### Корневая директория
+### Document Purpose
+
+This document describes the architecture, structure, and components of the **ArduMotorBlimp** repository — a custom implementation of a "Blimp" (Lighter-Than-Air) vehicle type for the ArduPilot platform.
+
+### Target Audience
+
+- Control system developers
+- ArduPilot integration engineers
+- Project team members
+- Code reviewers
+
+---
+
+## Project Overview
+
+### What is ArduMotorBlimp?
+
+**ArduMotorBlimp** is a specialized blimp (Lighter-Than-Air vehicle) implementation based on the official ArduPilot platform. The repository contains the initial state of the official `Blimp` module with custom modifications.
+
+### Key Characteristics
+
+| Parameter | Value |
+|-----------|-------|
+| **Vehicle Type** | Motorized blimp |
+| **Languages** | C++ (96.5%), C (3.2%), Python (0.3%) |
+| **License** | GPL-3.0 |
+| **Base** | Official ArduPilot repository |
+| **Status** | Initial development (Initial commit) |
+
+### Main Features
+
+- Support for standard ArduPilot flight modes
+- MAVLink protocol integration
+- Safety and failsafe system
+- Support for various motor configurations
+- Telemetry logging
+- EKF (Extended Kalman Filter) validation
+
+---
+
+## Repository Structure
+
+### Root Directory
 
 ```
 ArduMotorBlimp/
 │
-├── Основные файлы приложения
-│   ├── Blimp.cpp                  # Точка входа (main loop)
-│   ├── Blimp.h                    # Главный заголовочный файл
-│   ├── config.h                   # Конфигурация системы
-│   ├── defines.h                  # Определения констант
-│   └── version.h                  # Версия прошивки
+├── Main Application Files
+│   ├── Blimp.cpp                  # Entry point (main loop)
+│   ├── Blimp.h                    # Main header file
+│   ├── config.h                   # System configuration
+│   ├── defines.h                  # Constant definitions
+│   └── version.h                  # Firmware version
 │
-── Параметры и конфигурация
-│   ├── Parameters.cpp             # Реализация параметров
-│   ├── Parameters.h               # Объявление параметров
-│   └── wscript                    # Скрипт сборки (Waf)
+├── Parameters and Configuration
+│   ├── Parameters.cpp             # Parameters implementation
+│   ├── Parameters.h               # Parameters declaration
+│   └── wscript                    # Build script (Waf)
 │
-├── Режимы полета
-│   ├── mode.cpp                   # Базовый класс режимов
-│   ├── mode.h                     # Заголовок режимов
-│   ├── mode_manual.cpp            # Ручное управление
-│   ├── mode_loiter.cpp            # Удержание позиции
-│   ├── mode_hold.cpp              # Удержание (Hold)
-│   ├── mode_auto.cpp              # Автоматический режим
-│   ├── mode_land.cpp              # Посадка
+├── Flight Modes
+│   ├── mode.cpp                   # Base mode class
+│   ├── mode.h                     # Modes header
+│   ├── mode_manual.cpp            # Manual control
+│   ├── mode_loiter.cpp            # Position hold
+│   ├── mode_hold.cpp              # Hold mode
+│   ├── mode_auto.cpp              # Automatic mode
+│   ├── mode_land.cpp              # Landing
 │   ├── mode_rtl.cpp               # Return-To-Launch
-│   ├── mode_velocity.cpp          # Контроль скорости
-│   └── Loiter.cpp                 # Логика Loiter
-│       Loiter.h
+│   ├── mode_velocity.cpp          # Velocity control
+│   ├── Loiter.cpp                 # Loiter logic
+│   └── Loiter.h
 │
-── Система управления
-│   ├── motors.cpp                 # Управление моторами
-│   ├── Fins.cpp                   # Управление плавниками/рулями
-│   ├── Fins.h                     # Заголовок Fins
-│   ├── commands.cpp               # Обработка команд
-│   ├── radio.cpp                  # RC радио управление
-│   └── inertia.cpp                # Инерциальная навигация
+├── Control System
+│   ├── motors.cpp                 # Motor control
+│   ├── Fins.cpp                   # Fins/rudders control
+│   ├── Fins.h                     # Fins header
+│   ├── commands.cpp               # Command processing
+│   ├── radio.cpp                  # RC radio control
+│   └── inertia.cpp                # Inertial navigation
 │
-├── Сенсоры и навигация
-│   ├── sensors.cpp                # Чтение сенсоров
-│   └── ekf_check.cpp              # Проверка EKF
+├── Sensors and Navigation
+│   ├── sensors.cpp                # Sensor reading
+│   └── ekf_check.cpp              # EKF validation
 │
-├── Телеметрия и связь
+├── Telemetry and Communication
 │   ├── GCS_Blimp.cpp              # Ground Control Station
 │   ├── GCS_Blimp.h
-│   ├── GCS_MAVLink_Blimp.cpp      # MAVLink обработка
+│   ├── GCS_MAVLink_Blimp.cpp      # MAVLink processing
 │   ├── GCS_MAVLink_Blimp.h
-│   └── Log.cpp                    # Логирование данных
+│   ── Log.cpp                    # Data logging
 │
-├── Безопасность
-│   ├── AP_Arming_Blimp.cpp        # Проверки арминга
+├── Safety
+│   ├── AP_Arming_Blimp.cpp        # Arming checks
 │   ├── AP_Arming_Blimp.h
-│   ├── failsafe.cpp               # Failsafe логика
-│   ├── events.cpp                 # Обработка событий
-│   ── system.cpp                 # Системные функции
+│   ├── failsafe.cpp               # Failsafe logic
+│   ├── events.cpp                 # Event handling
+│   └── system.cpp                 # System functions
 │
-├── Состояние системы
-│   ├── AP_State.cpp               # Состояние аппарата
+├── System State
+│   ├── AP_State.cpp               # Vehicle state
 │   └── AP_State.h
 │
-└── RC каналы
-    ├── RC_Channel_Blimp.cpp       # Обработка RC каналов
+└── RC Channels
+    ├── RC_Channel_Blimp.cpp       # RC channels processing
     └── RC_Channel_Blimp.h
 ```
 
-### Статистика файлов
+### File Statistics
 
-| Категория | Количество файлов |
-|-----------|-------------------|
-| **Основные (.cpp)** | 18 файлов |
-| **Заголовки (.h)** | 13 файлов |
-| **Конфигурация** | 3 файла |
-| **Всего** | 42 файла |
+| Category | Number of Files |
+|----------|-----------------|
+| **Main (.cpp)** | 18 files |
+| **Headers (.h)** | 13 files |
+| **Configuration** | 3 files |
+| **Total** | 42 files |
 
 ---
 
-## Основные компоненты
+## Main Components
 
 ### 1. Blimp.cpp / Blimp.h
 
-**Назначение:** Точка входа и главный цикл приложения
+**Purpose:** Entry point and main application loop
 
-**Основные функции:**
+**Main Functions:**
 ```cpp
-// Главный класс дирижабля
+// Main blimp class
 class Blimp : public AP_HAL::HAL::Callbacks {
 public:
-    // Инициализация системы
+    // System initialization
     void init() override;
     
-    // Главный цикл (вызывается 1000 раз в секунду)
+    // Main loop (called 1000 times per second)
     void loop() override;
     
-    // Получение единственного экземпляра
+    // Get singleton instance
     static Blimp& get_instance();
     
 private:
-    // Внутренние методы
+    // Internal methods
     void update_loop();
     void read_sensors();
     void update_control();
 };
 ```
 
-**Жизненный цикл:**
+**Lifecycle:**
 ```
-init() → Настройка всех подсистем
-   ↓
-loop() → Главный цикл
-   ↓
+init() -> Setup all subsystems
+   |
+loop() -> Main loop
+   |
 1. read_sensors()
 2. update_EKF()
 3. update_control()
 4. update_motors()
 5. send_telemetry()
 6. logger.write()
-   ↓
-[Повтор 1000 Hz]
+   |
+[Repeat 1000 Hz]
 ```
 
 ### 2. Parameters.cpp / Parameters.h
 
-**Назначение:** Система параметров для настройки поведения
+**Purpose:** Parameter system for behavior configuration
 
-**Пример параметров:**
+**Example Parameters:**
 ```cpp
-// Объявление параметров
+// Parameter declaration
 const AP_Param::GroupInfo Parameters::var_info[] = {
-    // Режимы полета
+    // Flight modes
     AP_GROUPINFO("RTL_ALT", 1, Parameters, rtl_altitude, 1500),
     
-    // Моторы
+    // Motors
     AP_GROUPINFO("MOT_MAX", 2, Parameters, motor_max, 2000),
     AP_GROUPINFO("MOT_MIN", 3, Parameters, motor_min, 1000),
     
-    // Безопасность
+    // Safety
     AP_GROUPINFO("ARMING_CHECK", 4, Parameters, arming_check, 1),
     
     AP_GROUPEND
 };
 ```
 
-**Категории параметров:**
-- **Blimp_** — специфичные параметры дирижабля
-- **MOT_** — настройки моторов
-- **RTL_** — параметры возврата домой
-- **ARMING_** — проверки арминга
-- **LOG_** — настройки логирования
+**Parameter Categories:**
+- **Blimp_** — Blimp-specific parameters
+- **MOT_** — Motor settings
+- **RTL_** — Return-to-launch parameters
+- **ARMING_** — Arming checks
+- **LOG_** — Logging settings
 
 ### 3. mode.cpp / mode.h
 
-**Назначение:** Базовый класс для всех режимов полета
+**Purpose:** Base class for all flight modes
 
-**Иерархия режимов:**
+**Mode Hierarchy:**
 ```
-Mode (базовый класс)
-   ├── ModeManual        → Ручное управление
-   ├── ModeLoiter        → Удержание позиции
-   ├── ModeHold          → Удержание точки
-   ├── ModeAuto          → Автоматическая миссия
-   ├── ModeLand          → Посадка
-   ├── ModeRTL           → Возврат домой
-   └── ModeVelocity      → Контроль скорости
+Mode (base class)
+   ├── ModeManual        -> Manual control
+   ├── ModeLoiter        -> Position hold
+   ├── ModeHold          -> Point hold
+   ├── ModeAuto          -> Automatic mission
+   ├── ModeLand          -> Landing
+   ├── ModeRTL           -> Return to launch
+   └── ModeVelocity      -> Velocity control
 ```
 
-**Интерфейс режима:**
+**Mode Interface:**
 ```cpp
 class Mode {
 public:
-    // Инициализация режима
+    // Mode initialization
     virtual bool init(bool ignore_checks) = 0;
     
-    // Основной цикл режима
+    // Main mode loop
     virtual void run() = 0;
     
-    // Проверка доступности режима
+    // Mode availability check
     virtual bool requires_GPS() const = 0;
     
-    // Получение названия
+    // Get name
     virtual const char* name() const = 0;
     
 protected:
-    // Общие методы
+    // Common methods
     void set_desired_velocity(float vx, float vy, float vz);
     void set_desired_position(float x, float y, float z);
 };
@@ -259,91 +259,91 @@ protected:
 
 ### 4. motors.cpp
 
-**Назначение:** Управление моторами дирижабля
+**Purpose:** Blimp motor control
 
-**Особенности:**
-- Поддержка различных конфигураций моторов
-- Смешивание сигналов управления
-- Ограничение PWM диапазонов
-- Компенсация напряжения батареи
+**Features:**
+- Support for various motor configurations
+- Control signal mixing
+- PWM range limiting
+- Battery voltage compensation
 
-**Пример использования:**
+**Example Usage:**
 ```cpp
-// Инициализация моторов
+// Initialize motors
 motors->init();
 
-// Установка значений
+// Set values
 motors->set_roll(roll_input);
 motors->set_pitch(pitch_input);
 motors->set_yaw(yaw_input);
 motors->set_throttle(throttle_input);
 
-// Вывод на моторы
+// Output to motors
 motors->output();
 ```
 
 ### 5. Fins.cpp / Fins.h
 
-**Назначение:** Управление плавниками/рулями дирижабля
+**Purpose:** Blimp fins/rudders control
 
-**Функции:**
-- Управление аэродинамическими поверхностями
-- Стабилизация курса
-- Компенсация ветра
+**Functions:**
+- Aerodynamic surface control
+- Course stabilization
+- Wind compensation
 
 ### 6. GCS_Blimp.cpp / GCS_MAVLink_Blimp.cpp
 
-**Назначение:** Связь с наземной станцией (Ground Control Station)
+**Purpose:** Ground Control Station communication
 
-**Протоколы:**
-- **MAVLink** — основной протокол обмена данными
-- **UDP/TCP** — транспортные протоколы
+**Protocols:**
+- **MAVLink** — Main data exchange protocol
+- **UDP/TCP** — Transport protocols
 
-**Передаваемые данные:**
-- Позиция (GPS координаты)
-- Ориентация (roll, pitch, yaw)
-- Скорость и высота
-- Состояние батареи
-- Статус моторов
-- Телеметрия сенсоров
+**Transmitted Data:**
+- Position (GPS coordinates)
+- Orientation (roll, pitch, yaw)
+- Speed and altitude
+- Battery status
+- Motor status
+- Sensor telemetry
 
-**Принимаемые команды:**
-- Команды управления
-- Изменение параметров
-- Загрузка миссий
-- Команды арминга/дизарминга
+**Received Commands:**
+- Control commands
+- Parameter changes
+- Mission uploads
+- Arming/disarming commands
 
 ---
 
-## Система сборки
+## Build System
 
-### Waf build system
+### Waf Build System
 
-Проект использует **Waf** — Python-based build system, стандартную для ArduPilot.
+The project uses **Waf** — a Python-based build system, standard for ArduPilot.
 
-### Файл wscript
+### wscript File
 
 ```python
 def build(bld):
-    # Имя транспортного средства
+    # Vehicle name
     vehicle = bld.path.name
     
-    # Создание статической библиотеки
+    # Create static library
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_InputManager',        # Управление входами
-            'AP_Avoidance',           # Избегание препятствий
-            'AP_LTM_Telem',          # LTM телеметрия
-            'AP_Devo_Telem',         # Devo телеметрия
-            'AP_KDECAN',             # KDECAN поддержка
-            'AP_AdvancedFailsafe',   # Расширенный failsafe
-            'AC_AttitudeControl',    # Контроль ориентации
+            'AC_InputManager',        # Input management
+            'AP_Avoidance',           # Obstacle avoidance
+            'AP_LTM_Telem',          # LTM telemetry
+            'AP_Devo_Telem',         # Devo telemetry
+            'AP_KDECAN',             # KDECAN support
+            'AP_AdvancedFailsafe',   # Advanced failsafe
+            'AC_AttitudeControl',    # Attitude control
         ],
     )
     
-    # Создание исполняемого файла
+    # Create executable
     bld.ap_program(
         program_name='blimp',
         program_groups=['bin', 'blimp'],
@@ -351,215 +351,220 @@ def build(bld):
     )
 ```
 
-### Процесс сборки
+### Build Process
 
 ```bash
-# 1. Клонирование репозитория
+# 1. Clone repository
 git clone https://github.com/DaniK-51/ArduMotorBlimp.git
 cd ArduMotorBlimp
 
-# 2. Интеграция с ArduPilot
-# (обычно копируется в папку ArduPilot/Blimp/)
+# 2. Integration with ArduPilot
+# (usually copied to ArduPilot/Blimp/ folder)
 
-# 3. Конфигурация
+# 3. Configuration
 ./waf configure --board sitl
 
-# 4. Сборка
+# 4. Build
 ./waf blimp
 
-# 5. Результат
+# 5. Result
 ./build/sitl/bin/blimp
 ```
 
-### Зависимости
+### Dependencies
 
-**Общие библиотеки ArduPilot:**
-- AP_Common — общие утилиты
+**Common ArduPilot Libraries:**
+- AP_Common — Common utilities
 - AP_HAL — Hardware Abstraction Layer
-- AP_Math — математика
-- AP_Param — система параметров
-- AP_Scheduler — планировщик
+- AP_Math — Mathematics
+- AP_Param — Parameter system
+- AP_Scheduler — Task scheduler
 
-**Специфичные библиотеки:**
-- AP_AHRS — система ориентации
-- AP_NavEKF3 — фильтр Калмана
-- AP_Motors — управление моторами
-- RC_Channel — RC каналы
-- GCS_MAVLink — MAVLink протокол
-- AP_Logger — логирование
+**Specific Libraries:**
+- AP_AHRS — Attitude system
+- AP_NavEKF3 — Kalman filter
+- AP_Motors — Motor control
+- RC_Channel — RC channels
+- GCS_MAVLink — MAVLink protocol
+- AP_Logger — Logging
 
 ---
 
-## Режимы полета
+## Flight Modes
 
-### 1. Manual (Ручное управление)
+### 1. Manual
 
-**Файл:** `mode_manual.cpp`
+**File:** `mode_manual.cpp`
 
-**Описание:** Прямое управление моторами через RC пульт
+**Description:** Direct motor control via RC transmitter
 
-**Характеристики:**
-- Нет стабилизации
-- Полный контроль пилота
-- Требует постоянного внимания
+**Characteristics:**
+- No stabilization
+- Full pilot control
+- Requires constant attention
 
-### 2. Loiter (Удержание позиции)
+### 2. Loiter (Position Hold)
 
-**Файл:** `mode_loiter.cpp`, `Loiter.cpp`
+**Files:** `mode_loiter.cpp`, `Loiter.cpp`
 
-**Описание:** Автоматическое удержание текущей позиции
+**Description:** Automatic current position hold
 
-**Характеристики:**
-- Использует GPS для позиционирования
-- PID контроллер для коррекции дрейфа
-- Компенсация ветра
+**Characteristics:**
+- Uses GPS for positioning
+- PID controller for drift correction
+- Wind compensation
 
-**Алгоритм:**
+**Algorithm:**
 ```
-1. Запоминаем текущую позицию (GPS)
-2. Считываем текущую позицию
-3. Вычисляем ошибку (desired - current)
-4. PID контроллер → корректировка скорости
-5. Отправка команд моторам
+1. Remember current position (GPS)
+2. Read current position
+3. Calculate error (desired - current)
+4. PID controller -> speed correction
+5. Send commands to motors
 ```
 
-### 3. Hold (Удержание)
+### 3. Hold
 
-**Файл:** `mode_hold.cpp`
+**File:** `mode_hold.cpp`
 
-**Описание:** Удержание текущей позиции и высоты
+**Description:** Current position and altitude hold
 
-**Отличие от Loiter:**
-- Более строгое удержание
-- Меньше допустимая ошибка
-- Использует барометр для высоты
+**Difference from Loiter:**
+- Stricter hold
+- Smaller allowed error
+- Uses barometer for altitude
 
-### 4. Auto (Автоматический)
+### 4. Auto (Automatic)
 
-**Файл:** `mode_auto.cpp`
+**File:** `mode_auto.cpp`
 
-**Описание:** Выполнение заранее заданной миссии
+**Description:** Execute pre-defined mission
 
-**Возможности:**
-- Следование по точкам (waypoints)
-- Выполнение команд (взлет, посадка, задержка)
-- Автоматический возврат при потере связи
+**Capabilities:**
+- Follow waypoints
+- Execute commands (takeoff, land, delay)
+- Automatic return on connection loss
 
-### 5. Land (Посадка)
+### 5. Land
 
-**Файл:** `mode_land.cpp`
+**File:** `mode_land.cpp`
 
-**Описание:** Автоматическая посадка
+**Description:** Automatic landing
 
-**Алгоритм:**
+**Algorithm:**
 ```
-1. Снижение с контролируемой скоростью
-2. Удержание горизонтальной позиции
-3. Обнаружение земли (range finder)
-4. Отключение моторов после посадки
+1. Descend with controlled speed
+2. Maintain horizontal position
+3. Detect ground (range finder)
+4. Disable motors after landing
 ```
 
 ### 6. RTL (Return-To-Launch)
 
-**Файл:** `mode_rtl.cpp`
+**File:** `mode_rtl.cpp`
 
-**Описание:** Автоматический возврат в точку взлета
+**Description:** Automatic return to takeoff point
 
-**Последовательность:**
+**Sequence:**
 ```
-1. Подъем на безопасную высоту
-2. Полет к точке запуска (GPS)
-3. Снижение и посадка
+1. Climb to safe altitude
+2. Fly to launch point (GPS)
+3. Descend and land
 ```
 
-### 7. Velocity (Контроль скорости)
+### 7. Velocity (Velocity Control)
 
-**Файл:** `mode_velocity.cpp`
+**File:** `mode_velocity.cpp`
 
-**Описание:** Управление через задание скорости
+**Description:** Control via velocity command
 
-**Применение:**
-- Точное управление движением
-- Интеграция с внешними системами
-- Компенсация ветра
+**Applications:**
+- Precise motion control
+- External system integration
+- Wind compensation
 
 ---
 
-## Система управления
+## Control System
 
-### Архитектура управления
+### Control Architecture
 
 ```
-┌─────────────────────────────────────────────────────────
-│  Пилот / GCS                                            │
-│  (RC каналы / MAVLink команды)                          │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-─────────────────────────────────────────────────────────┐
-│  RC_Channel_Blimp                                       │
-│  • Чтение RC каналов                                    │
-│  • Фильтрация сигналов                                  │
-│  • Проверка failsafe                                    │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  Mode (текущий режим полета)                            │
-│  • Обработка команд                                     │
-│  • Генерация целевых значений                           │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  AC_AttitudeControl / AC_PositionControl                │
-│  • PID контроллер ориентации                            │
-│  • PID контроллер позиции                               │
-│  • PID контроллер скорости                              │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  motors.cpp / Fins.cpp                                  │
-│  • Смешивание сигналов                                  │
-│  • Ограничение диапазонов                               │
-│  • Компенсация батареи                                  │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  Моторы / Плавники                                      │
-│  (PWM сигналы 1000-2000 мкс)                            │
-─────────────────────────────────────────────────────────┘
++---------------------------------------------------------+
+|  Pilot / GCS                                            |
+|  (RC channels / MAVLink commands)                       |
++------------------------+--------------------------------+
+                         |
+                         v
++---------------------------------------------------------+
+|  RC_Channel_Blimp                                       |
+|  - Read RC channels                                     |
+|  - Signal filtering                                     |
+|  - Failsafe check                                       |
++------------------------+--------------------------------+
+                         |
+                         v
++---------------------------------------------------------+
+|  Mode (current flight mode)                             |
+|  - Process commands                                     |
+|  - Generate target values                               |
++------------------------+--------------------------------+
+                         |
+                         v
++---------------------------------------------------------+
+|  AC_AttitudeControl / AC_PositionControl                |
+|  - Attitude PID controller                              |
+|  - Position PID controller                              |
+|  - Velocity PID controller                              |
++------------------------+--------------------------------+
+                         |
+                         v
++---------------------------------------------------------+
+|  motors.cpp / Fins.cpp                                  |
+|  - Signal mixing                                        |
+|  - Range limiting                                       |
+|  - Battery compensation                                 |
++------------------------+--------------------------------+
+                         |
+                         v
++---------------------------------------------------------+
+|  Motors / Fins                                          |
+|  (PWM signals 1000-2000 us)                             |
++---------------------------------------------------------+
 ```
 
-### PID контроллеры
+### PID Controllers
 
-**Attitude Control (ориентация):**
+**Attitude Control:**
 ```cpp
-// Roll контроллер
+// Roll controller
 roll_error = desired_roll - current_roll;
 roll_output = Kp * roll_error + Ki * integral + Kd * derivative;
 
-// Pitch контроллер
+// Pitch controller
 pitch_error = desired_pitch - current_pitch;
 pitch_output = Kp * pitch_error + Ki * integral + Kd * derivative;
 
-// Yaw контроллер
+// Yaw controller
 yaw_error = desired_yaw - current_yaw;
 yaw_output = Kp * yaw_error + Ki * integral;
 ```
 
-**Position Control (позиция):**
+**Position Control:**
 ```cpp
-// Горизонтальная позиция
+// Horizontal position
 pos_error_x = desired_x - current_x;
 vel_desired_x = Kp * pos_error_x;
 
 pos_error_y = desired_y - current_y;
 vel_desired_y = Kp * pos_error_y;
 
-// Вертикальная позиция (высота)
+// Vertical position (altitude)
 alt_error = desired_alt - current_alt;
 vel_desired_z = Kp * alt_error;
 ```
 
-**Velocity Control (скорость):**
+**Velocity Control:**
 ```cpp
 vel_error_x = desired_vel_x - current_vel_x;
 accel_output_x = Kp * vel_error_x + Ki * integral;
@@ -570,37 +575,37 @@ accel_output_y = Kp * vel_error_y + Ki * integral;
 
 ---
 
-## Телеметрия и связь
+## Telemetry and Communication
 
-### MAVLink протокол
+### MAVLink Protocol
 
-**Основные сообщения (отправка):**
+**Main Messages (Transmitted):**
 
-| Сообщение | Частота | Описание |
-|-----------|---------|----------|
-| **HEARTBEAT** | 1 Hz | Статус системы |
+| Message | Frequency | Description |
+|---------|-----------|-------------|
+| **HEARTBEAT** | 1 Hz | System status |
 | **ATTITUDE** | 10-50 Hz | Roll, pitch, yaw |
-| **GLOBAL_POSITION_INT** | 10 Hz | GPS позиция |
-| **SYS_STATUS** | 1 Hz | Состояние системы |
-| **VFR_HUD** | 5 Hz | Скорость, высота |
-| **RC_CHANNELS** | 5 Hz | RC каналы |
-| **SERVO_OUTPUT_RAW** | 5 Hz | PWM выходы |
+| **GLOBAL_POSITION_INT** | 10 Hz | GPS position |
+| **SYS_STATUS** | 1 Hz | System state |
+| **VFR_HUD** | 5 Hz | Speed, altitude |
+| **RC_CHANNELS** | 5 Hz | RC channels |
+| **SERVO_OUTPUT_RAW** | 5 Hz | PWM outputs |
 
-**Основные команды (прием):**
+**Main Commands (Received):**
 
-| Команда | Описание |
-|---------|----------|
-| **COMMAND_LONG** | Длинные команды (взлет, RTL) |
-| **SET_POSITION_TARGET_GLOBAL_INT** | Целевая позиция |
-| **SET_ATTITUDE_TARGET** | Целевая ориентация |
-| **PARAM_SET** | Установка параметра |
-| **MISSION_ITEM** | Элемент миссии |
+| Command | Description |
+|---------|-------------|
+| **COMMAND_LONG** | Long commands (takeoff, RTL) |
+| **SET_POSITION_TARGET_GLOBAL_INT** | Target position |
+| **SET_ATTITUDE_TARGET** | Target attitude |
+| **PARAM_SET** | Set parameter |
+| **MISSION_ITEM** | Mission item |
 
 ### GCS_Blimp
 
-**Функции:**
+**Functions:**
 ```cpp
-// Отправка телеметрии
+// Send telemetry
 void GCS_Blimp::send_telemetry() {
     send_heartbeat();
     send_attitude();
@@ -609,7 +614,7 @@ void GCS_Blimp::send_telemetry() {
     send_rc_channels();
 }
 
-// Обработка команд
+// Process commands
 void GCS_Blimp::handle_message(mavlink_message_t& msg) {
     switch(msg.msgid) {
         case MAVLINK_MSG_ID_COMMAND_LONG:
@@ -618,25 +623,25 @@ void GCS_Blimp::handle_message(mavlink_message_t& msg) {
         case MAVLINK_MSG_ID_PARAM_SET:
             handle_param_set(msg);
             break;
-        // ... другие команды
+        // ... other commands
     }
 }
 ```
 
-### Логирование (Log.cpp)
+### Logging (Log.cpp)
 
-**Типы логов:**
-- **ATT** — ориентация (attitude)
-- **POS** — позиция (position)
-- **MOT** — моторы (motors)
-- **BAT** — батарея (battery)
-- **GPS** — GPS данные
-- **IMU** — IMU данные
-- **CMD** — команды
+**Log Types:**
+- **ATT** — Attitude
+- **POS** — Position
+- **MOT** — Motors
+- **BAT** — Battery
+- **GPS** — GPS data
+- **IMU** — IMU data
+- **CMD** — Commands
 
-**Формат:**
+**Format:**
 ```cpp
-// Запись лога
+// Write log
 struct Log_Attitude {
     float roll;
     float pitch;
@@ -656,41 +661,41 @@ logger.Write("ATT", "roll,pitch,yaw,roll_d,pitch_d",
 
 ---
 
-## Безопасность
+## Safety
 
 ### AP_Arming_Blimp
 
-**Проверки перед армингом:**
+**Pre-arming Checks:**
 
 ```cpp
 bool AP_Arming_Blimp::pre_arm_checks() {
     bool success = true;
     
-    // 1. Проверка GPS
+    // 1. GPS check
     if (!gps_ok()) {
         gcs().send_text("PreArm: GPS not ready");
         success = false;
     }
     
-    // 2. Проверка EKF
+    // 2. EKF check
     if (!ekf_ok()) {
         gcs().send_text("PreArm: EKF not ready");
         success = false;
     }
     
-    // 3. Проверка батареи
+    // 3. Battery check
     if (battery_voltage < min_voltage) {
         gcs().send_text("PreArm: Battery too low");
         success = false;
     }
     
-    // 4. Проверка RC калибровки
+    // 4. RC calibration check
     if (!rc_calibrated()) {
         gcs().send_text("PreArm: RC not calibrated");
         success = false;
     }
     
-    // 5. Проверка сенсоров
+    // 5. Sensor check
     if (!sensors_ok()) {
         gcs().send_text("PreArm: Sensors not healthy");
         success = false;
@@ -702,52 +707,52 @@ bool AP_Arming_Blimp::pre_arm_checks() {
 
 ### Failsafe
 
-**Сценарии failsafe:**
+**Failsafe Scenarios:**
 
-1. **Потеря RC связи:**
+1. **RC Signal Loss:**
    ```
-   1. Обнаружение потери сигнала (> 500ms)
-   2. Переключение в RTL режим
-   3. Возврат домой и посадка
-   ```
-
-2. **Низкий заряд батареи:**
-   ```
-   1. Предупреждение (warning level)
-   2. Критическое предупреждение (critical level)
-   3. Автоматическая посадка (emergency level)
+   1. Detect signal loss (> 500ms)
+   2. Switch to RTL mode
+   3. Return home and land
    ```
 
-3. **GPS потеря:**
+2. **Low Battery:**
    ```
-   1. Переключение в режим без GPS
-   2. Удержание позиции по барометру
-   3. Предупреждение пилота
+   1. Warning (warning level)
+   2. Critical warning (critical level)
+   3. Automatic landing (emergency level)
    ```
 
-4. **EKF ошибка:**
+3. **GPS Loss:**
    ```
-   1. Обнаружение расхождения EKF
-   2. Переключение на резервный EKF
-   3. Если не помогает — посадка
+   1. Switch to GPS-less mode
+   2. Hold position using barometer
+   3. Warn pilot
+   ```
+
+4. **EKF Error:**
+   ```
+   1. Detect EKF divergence
+   2. Switch to backup EKF
+   3. If fails - land
    ```
 
 ### EKF Check (ekf_check.cpp)
 
-**Проверки EKF:**
+**EKF Checks:**
 ```cpp
 bool EKF_Check::healthy() {
-    // Проверка дисперсии позиции
+    // Position variance check
     if (pos_variance > threshold) {
         return false;
     }
     
-    // Проверка дисперсии скорости
+    // Velocity variance check
     if (vel_variance > threshold) {
         return false;
     }
     
-    // Проверка сходимости
+    // Convergence check
     if (!ekf_converged()) {
         return false;
     }
@@ -758,81 +763,81 @@ bool EKF_Check::healthy() {
 
 ---
 
-## Параметры
+## Parameters
 
-### Категории параметров
+### Parameter Categories
 
-**Blimp параметры:**
+**Blimp Parameters:**
 ```cpp
-// Конфигурация
-Blimp_TYPE           // Тип дирижабля
-Blimp_ENABLE         // Включение системы
-Blimp_OPTIONS        // Опции
+// Configuration
+Blimp_TYPE           // Blimp type
+Blimp_ENABLE         // System enable
+Blimp_OPTIONS        // Options
 
-// Моторы
-Blimp_MOT_MAX        // Максимальный PWM
-Blimp_MOT_MIN        // Минимальный PWM
-Blimp_MOT_IDLE       // Холостой ход
-Blimp_MOT_SPIN_MIN   // Минимальные обороты
+// Motors
+Blimp_MOT_MAX        // Maximum PWM
+Blimp_MOT_MIN        // Minimum PWM
+Blimp_MOT_IDLE       // Idle
+Blimp_MOT_SPIN_MIN   // Minimum spin
 
-// Управление
-Blimp_RTL_ALT        // Высота возврата (см)
-Blimp_LAND_SPEED       // Скорость посадки
-Blimp_LOITER_SPEED     // Скорость в Loiter
+// Control
+Blimp_RTL_ALT        // Return altitude (cm)
+Blimp_LAND_SPEED     // Landing speed
+Blimp_LOITER_SPEED   // Loiter speed
 
-// Безопасность
-Blimp_FS_ENABLE      // Включение failsafe
-Blimp_FS_THR_ENABLE  // Failsafe по газу
-Blimp_FS_THR_VALUE   // Порог газа
+// Safety
+Blimp_FS_ENABLE      // Failsafe enable
+Blimp_FS_THR_ENABLE  // Throttle failsafe
+Blimp_FS_THR_VALUE   // Throttle threshold
 ```
 
-### Загрузка/сохранение параметров
+### Loading/Saving Parameters
 
 ```bash
-# В MAVProxy
-param load blimp_params.parm    # Загрузить параметры
-param save blimp_params.parm    # Сохранить параметры
-param show                      # Показать все параметры
-param set Blimp_RTL_ALT 2000    # Установить параметр
-param diff                      # Показать отличия от дефолта
+# In MAVProxy
+param load blimp_params.parm    # Load parameters
+param save blimp_params.parm    # Save parameters
+param show                      # Show all parameters
+param set Blimp_RTL_ALT 2000    # Set parameter
+param diff                      # Show differences from default
 ```
 
 ---
 
-## Интеграция с ArduPilot
+## Integration with ArduPilot
 
-### Связь с основным репозиторием
+### Connection with Main Repository
 
-**ArduMotorBlimp** — это **форк/модуль** официального репозитория ArduPilot.
+**ArduMotorBlimp** is a **fork/module** of the official ArduPilot repository.
 
-**Структура интеграции:**
+**Integration Structure:**
 ```
-ardupilot/                    # Основной репозиторий ArduPilot
-└── Blimp/                    # Наш модуль (копия ArduMotorBlimp)
+ardupilot/                    # Main ArduPilot repository
+└── Blimp/                    # Our module (copy of ArduMotorBlimp)
     ├── Blimp.cpp
     ├── mode.cpp
     └── ...
     
-libraries/                    # Общие библиотеки
+libraries/                    # Common libraries
 ├── AP_Motors/
 ├── AP_AHRS/
-├── AP_NavEKF3/
+── AP_NavEKF3/
 └── ...
 ```
 
-### Отличия от стандартного Blimp
+### Differences from Standard Blimp
 
-**ArduMotorBlimp** содержит:
-- ✅ Начальную реализацию дирижабля
-- ✅ Кастомные режимы полета
-- ✅ Специфичную логику управления моторами
-- ✅ Интеграцию с Fins (плавниками)
-- ✅ Расширенные проверки безопасности
+**ArduMotorBlimp** contains:
+- Initial blimp implementation
+- Custom flight modes
+- Specific motor control logic
+- Integration with Fins
+- Extended safety checks
 
-### Процесс обновления
+### Update Process
 
 ```bash
-# Синхронизация с ArduPilot
+# Sync with ArduPilot
 git remote add ardupilot https://github.com/ArduPilot/ardupilot.git
 git fetch ardupilot
 git merge ardupilot/master
@@ -841,149 +846,149 @@ git push origin main
 
 ---
 
-## Связь с проектом the_blimp_swp
+## Connection with the_blimp_swp Project
 
-### Архитектурная связь
+### Architectural Connection
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  the_blimp_swp                                              │
-│  (репозиторий команды)                                      │
-│                                                             │
-│  ├── sitl/                      # Docker + SITL             │
-│  │   ├── Dockerfile                                         │
-│  │   ├── docker-compose.yml                                 │
-│  │   ├── params/blimp.parm                                  │
-│  │   └── scripts/blimp_motor_control.lua                    │
-│  │                                                          │
-│  └── docs/                      # Документация              │
-│      └── REPOSITORY_STRUCTURE.md                            │
-└────────────────────┬────────────────────────────────────────┘
-                     │ Тестирует и использует
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│  ArduMotorBlimp                                             │
-│  (репозиторий прошивки)                                     │
-│                                                             │
-│  ├── Blimp.cpp                  # Main application          │
-│  ├── mode.cpp                   # Flight modes              │
-│  ├── motors.cpp                 # Motor control             │
-│  └── ...                        # Все компоненты            │
-└────────────────────┬────────────────────────────────────────┘
-                     │ Основан на
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│  ArduPilot                                                  │
-│  (официальный репозиторий)                                  │
-│                                                             │
-│  ├── libraries/                 # Общие библиотеки          │
-│  ├── Tools/                     # Инструменты сборки        │
-│  └── wscript                    # Build system              │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|  the_blimp_swp                                              |
+|  (team repository)                                          |
+|                                                             |
+|  +-- sitl/                      # Docker + SITL             |
+|  |   +-- Dockerfile                                         |
+|  |   +-- docker-compose.yml                                 |
+|  |   +-- params/blimp.parm                                  |
+|  |   +-- scripts/blimp_motor_control.lua                    |
+|  |                                                          |
+|  +-- docs/                      # Documentation             |
+|      +-- REPOSITORY_STRUCTURE.md                            |
++-----------------------------+-------------------------------+
+                              | Tests and uses
+                              v
++-------------------------------------------------------------+
+|  ArduMotorBlimp                                             |
+|  (firmware repository)                                      |
+|                                                             |
+|  +-- Blimp.cpp                  # Main application          |
+|  +-- mode.cpp                   # Flight modes              |
+|  +-- motors.cpp                 # Motor control             |
+|  +-- ...                        # All components            |
++-----------------------------+-------------------------------+
+                              | Based on
+                              v
++-------------------------------------------------------------+
+|  ArduPilot                                                  |
+|  (official repository)                                      |
+|                                                             |
+|  +-- libraries/                 # Common libraries          |
+|  +-- Tools/                     # Build tools               |
+|  +-- wscript                    # Build system              |
++-------------------------------------------------------------+
 ```
 
 ---
 
-## Полезные команды
+## Useful Commands
 
-### Сборка и запуск
+### Build and Run
 
 ```bash
-# Сборка для SITL
+# Build for SITL
 ./waf configure --board sitl
 ./waf blimp
 
-# Запуск
+# Run
 ./build/sitl/bin/blimp --model +
 
-# С кастомными параметрами
+# With custom parameters
 ./build/sitl/bin/blimp --model + --add-param-file=blimp.parm
 ```
 
-### Отладка
+### Debugging
 
 ```bash
-# Просмотр логов
+# View logs
 mavlog.py *.bin
 
-# Анализ параметров
+# Analyze parameters
 param.py show
 
-# Проверка состояния
+# Check status
 mavproxy.py --master=127.0.0.1:14550
 ```
 
-### Git workflow
+### Git Workflow
 
 ```bash
-# Создание ветки
+# Create branch
 git checkout -b feature/new-mode
 
-# Внесение изменений
+# Make changes
 git add .
 git commit -m "feat: add new flight mode"
 
-# Отправка
+# Push
 git push origin feature/new-mode
 
-# Создание PR
-# (на GitHub)
+# Create PR
+# (on GitHub)
 ```
 
 ---
 
-## Приложения
+## Appendices
 
-### A. Словарь терминов
+### A. Glossary
 
-| Термин | Определение |
-|--------|-------------|
-| **Arming** | Включение моторов (подготовка к полету) |
-| **Disarming** | Выключение моторов |
-| **Failsafe** | Автоматическая реакция на аварийную ситуацию |
-| **EKF** | Extended Kalman Filter — фильтр для навигации |
-| **GCS** | Ground Control Station — наземная станция |
-| **Loiter** | Удержание позиции |
-| **RTL** | Return-To-Launch — возврат домой |
-| **PWM** | Pulse Width Modulation — управление моторами |
-| **RC** | Radio Control — радио управление |
-| **MAVLink** | Протокол связи с автопилотом |
-| **SITL** | Software In The Loop — симуляция |
-| **PID** | Proportional-Integral-Derivative — регулятор |
+| Term | Definition |
+|------|------------|
+| **Arming** | Enabling motors (preparation for flight) |
+| **Disarming** | Disabling motors |
+| **Failsafe** | Automatic reaction to emergency situation |
+| **EKF** | Extended Kalman Filter — navigation filter |
+| **GCS** | Ground Control Station |
+| **Loiter** | Position hold |
+| **RTL** | Return-To-Launch |
+| **PWM** | Pulse Width Modulation — motor control |
+| **RC** | Radio Control |
+| **MAVLink** | Autopilot communication protocol |
+| **SITL** | Software In The Loop — simulation |
+| **PID** | Proportional-Integral-Derivative — controller |
 
-### B. Полезные ссылки
+### B. Useful Links
 
-**Официальные ресурсы:**
+**Official Resources:**
 - [ArduPilot.org](https://ardupilot.org/)
 - [Developer Wiki](https://ardupilot.org/dev/)
 - [ArduMotorBlimp GitHub](https://github.com/DaniK-51/ArduMotorBlimp)
 - [Discord](https://discord.com/invite/ardupilot)
 
-**Документация:**
+**Documentation:**
 - [Building ArduPilot](https://ardupilot.org/dev/docs/building-the-code.html)
 - [Parameters List](https://ardupilot.org/copter/docs/parameters.html)
 - [MAVLink Protocol](https://mavlink.io/)
 
-### C. Чеклист перед коммитом
+### C. Pre-commit Checklist
 
-- [ ] Код компилируется без ошибок
-- [ ] Нет предупреждений компилятора
-- [ ] Все тесты проходят
-- [ ] Документация обновлена
-- [ ] Параметры задокументированы
-- [ ] Лицензия соблюдается (GPL-3.0)
-
----
-
-## История изменений
-
-| Дата | Версия | Описание | Автор |
-|------|--------|----------|-------|
-| 2026-07-01 | 1.0 | Начальная версия документа | Команда Blimp |
-| 2026-07-01 | 1.1 | Убраны разделы Workflow и План развития | Команда Blimp |
+- [ ] Code compiles without errors
+- [ ] No compiler warnings
+- [ ] All tests pass
+- [ ] Documentation updated
+- [ ] Parameters documented
+- [ ] License compliance (GPL-3.0)
 
 ---
 
-**Этот документ будет обновляться по мере развития проекта ArduMotorBlimp.**
+## Change History
 
-**Последнее обновление:** 1 июля 2026
+| Date | Version | Description | Author |
+|------|---------|-------------|--------|
+| 2026-07-01 | 1.0 | Initial document version | Blimp Team |
+| 2026-07-01 | 1.1 | Removed Workflow and Development Plan sections | Blimp Team |
+
+---
+
+**This document will be updated as the ArduMotorBlimp project evolves.**
+
+**Last updated:** July 1, 2026
