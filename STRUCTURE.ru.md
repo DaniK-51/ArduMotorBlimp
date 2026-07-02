@@ -273,8 +273,8 @@ protected:
 **Выходные поля (интерфейс от Loiter):**
 ```cpp
 float forward_out;  // движение вперёд, -1 до +1
-float roll_out;     // вращение roll, -1 до +1
 float pitch_out;    // вращение pitch, -1 до +1
+float roll_out;     // вращение roll, -1 до +1
 float yaw_out;      // вращение yaw, -1 до +1
 ```
 
@@ -288,8 +288,8 @@ float yaw_out;      // вращение yaw, -1 до +1
 **Матрица смешивания:** Каждый мотор имеет коэффициенты `_amp_factor`, определяющие какую долю каждого выхода он использует:
 ```cpp
 _thrpos[i] = forward_out * _forward_amp_factor[i]
-           + roll_out    * _roll_amp_factor[i]
            + pitch_out   * _pitch_amp_factor[i]
+           + roll_out    * _roll_amp_factor[i]
            + yaw_out     * _yaw_amp_factor[i];
 ```
 
@@ -530,7 +530,7 @@ cd ArduMotorBlimp
 │   уменьшает вклад каждой оси)      │                        │
 └─────────────────────────────────────┼──────────────────────┘
                                       │
-              motors->{forward_out, roll_out, pitch_out, yaw_out}
+              motors->{forward_out, pitch_out, roll_out, yaw_out}
                                       │
                                       ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -539,8 +539,8 @@ cd ArduMotorBlimp
 │  Берёт 4 числа и матрично смешивает в сигналы моторов:     │
 │                                                             │
 │  _thrpos[i] = forward_out * _forward_amp_factor[i]          │
-│             + roll_out    * _roll_amp_factor[i]             │
 │             + pitch_out   * _pitch_amp_factor[i]            │
+│             + roll_out    * _roll_amp_factor[i]             │
 │             + yaw_out     * _yaw_amp_factor[i]              │
 │                                                             │
 │  Фреймы: FISHBLIMP (ластовики), FOUR_MOTOR, ROTARY_BLIMP    │
@@ -555,7 +555,7 @@ cd ArduMotorBlimp
 ### Разделение ответственности
 
 **Loiter** — не знает как устроены моторы. Пишет 4 числа:
-`forward_out` (вперёд), `roll_out` (крен), `pitch_out` (тангаж), `yaw_out` (рыскание).
+`forward_out` (вперёд), `pitch_out` (тангаж), `roll_out` (крен), `yaw_out` (рыскание).
 
 **Fins** — не знает откуда пришли эти числа. Берёт 4 числа и через матрицу `_amp_factor` преобразует в сигналы для каждого мотора/серво.
 
@@ -606,8 +606,8 @@ act_yaw    = pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yaw, blimp.vel_yaw
 ```cpp
 // ModeManual::run()
 motors->forward_out = pilot.x * g.max_man_thr;
-motors->roll_out    = pilot.y * g.max_man_thr;
 motors->pitch_out   = pilot.z * g.max_man_thr;
+motors->roll_out    = pilot.y * g.max_man_thr;
 motors->yaw_out     = pilot_yaw * g.max_man_thr;
 ```
 

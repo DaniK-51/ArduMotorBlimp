@@ -9,8 +9,8 @@ struct PACKED log_FINI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     float Forward;
-    float Roll;
     float Pitch;
+    float Roll;
     float Yaw;
 };
 
@@ -28,14 +28,14 @@ struct PACKED log_FINO {
 };
 
 //Write a fin input packet
-void Blimp::Write_FINI(float forward, float roll, float pitch, float yaw)
+void Blimp::Write_FINI(float forward, float pitch, float roll, float yaw)
 {
     const struct log_FINI pkt {
         LOG_PACKET_HEADER_INIT(LOG_FINI_MSG),
         time_us       : AP_HAL::micros64(),
         Forward       : forward,
-        Roll          : roll,
         Pitch         : pitch,
+        Roll          : roll,
         Yaw           : yaw
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
@@ -244,13 +244,13 @@ const struct LogStructure Blimp::log_structure[] = {
     // @Description: Fin input
     // @Field: TimeUS: Time since system startup
     // @Field: Fwd: Forward
-    // @Field: Roll: Roll
-    // @Field: Pitch: Pitch
+    // @Field: P: Pitch
+    // @Field: R: Roll
     // @Field: Y: Yaw
 
     {
         LOG_FINI_MSG, sizeof(log_FINI),
-        "FINI",  "Qffff",     "TimeUS,Fwd,Roll,Pitch,Y", "s----", "F----"
+        "FINI",  "Qffff",     "TimeUS,Fwd,P,R,Y", "s----", "F----"
     },
 
     // @LoggerMessage: FINO

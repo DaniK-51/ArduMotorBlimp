@@ -273,8 +273,8 @@ protected:
 **Output fields (interface from Loiter):**
 ```cpp
 float forward_out;  // forward movement, -1 to +1
-float roll_out;     // roll rotation, -1 to +1
 float pitch_out;    // pitch rotation, -1 to +1
+float roll_out;     // roll rotation, -1 to +1
 float yaw_out;      // yaw rotation, -1 to +1
 ```
 
@@ -288,8 +288,8 @@ float yaw_out;      // yaw rotation, -1 to +1
 **Mixing matrix:** Each motor has `_amp_factor` coefficients that define how much of each output axis it responds to:
 ```cpp
 _thrpos[i] = forward_out * _forward_amp_factor[i]
-           + roll_out    * _roll_amp_factor[i]
            + pitch_out   * _pitch_amp_factor[i]
+           + roll_out    * _roll_amp_factor[i]
            + yaw_out     * _yaw_amp_factor[i];
 ```
 
@@ -532,7 +532,7 @@ cd ArduMotorBlimp
 |   reduces each axis contribution)  |                        |
 +-------------------------------------+-----------------------+
                                       |
-        motors->{forward_out, roll_out, pitch_out, yaw_out}
+        motors->{forward_out, pitch_out, roll_out, yaw_out}
                                       |
                                       v
 +-------------------------------------------------------------+
@@ -541,8 +541,8 @@ cd ArduMotorBlimp
 |  Takes 4 values and matrix-mixes into motor signals:        |
 |                                                             |
 |  _thrpos[i] = forward_out * _forward_amp_factor[i]          |
-|             + roll_out    * _roll_amp_factor[i]             |
 |             + pitch_out   * _pitch_amp_factor[i]            |
+|             + roll_out    * _roll_amp_factor[i]             |
 |             + yaw_out     * _yaw_amp_factor[i]              |
 |                                                             |
 |  Frames: FISHBLIMP (fins), FOUR_MOTOR, ROTARY_BLIMP         |
@@ -558,7 +558,7 @@ cd ArduMotorBlimp
 ### Separation of Concerns
 
 **Loiter** -- does not know how motors are wired. Writes 4 values:
-`forward_out` (forward), `roll_out` (roll), `pitch_out` (pitch), `yaw_out` (yaw).
+`forward_out` (forward), `pitch_out` (pitch), `roll_out` (roll), `yaw_out` (yaw).
 
 **Fins** -- does not know where these values come from. Takes 4 values and through the `_amp_factor` matrix converts them into per-motor/servo signals.
 
@@ -609,8 +609,8 @@ act_yaw    = pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yaw, blimp.vel_yaw
 ```cpp
 // ModeManual::run()
 motors->forward_out = pilot.x * g.max_man_thr;
-motors->roll_out    = pilot.y * g.max_man_thr;
 motors->pitch_out   = pilot.z * g.max_man_thr;
+motors->roll_out    = pilot.y * g.max_man_thr;
 motors->yaw_out     = pilot_yaw * g.max_man_thr;
 ```
 

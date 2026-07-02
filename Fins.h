@@ -83,14 +83,14 @@ private:
     void output_fins();
     void output_motors();
     void output_rotary();
-    void add_fin(int8_t fin_num, float roll_amp_fac, float forward_amp_fac, float yaw_amp_fac, float pitch_amp_fac, float roll_off_fac, float forward_off_fac, float yaw_off_fac, float pitch_off_fac);
-    void add_motor(int8_t fin_num, float roll_amp_fac, float forward_amp_fac, float yaw_amp_fac, float pitch_amp_fac);
+    void add_fin(int8_t fin_num, float forward_amp_fac, float pitch_amp_fac, float roll_amp_fac, float yaw_amp_fac, float forward_off_fac, float pitch_off_fac, float roll_off_fac, float yaw_off_fac);
+    void add_motor(int8_t fin_num, float forward_amp_fac, float pitch_amp_fac, float roll_amp_fac, float yaw_amp_fac);
 
 public:
     float               forward_out;                //input forward movement, negative for backwards, +1 to -1
+    float               pitch_out;                  //input pitch rotation, +1 to -1
     float               roll_out;                   //input roll rotation, +1 to -1
     float               yaw_out;                    //input yaw, +1 to -1
-    float               pitch_out;                  //input pitch rotation, +1 to -1
 
     AP_Float            freq_hz;
     AP_Int8             turbo_mode;
@@ -106,7 +106,7 @@ public:
         //Only for Mavlink - essentially just an indicator of how hard the fins are working.
         //Note that this is the unconstrained version, so if the higher level control gives too high input,
         //throttle will be displayed as more than 100.
-        return fmaxf(fmaxf(fabsf(pitch_out),fabsf(forward_out)), fmaxf(fabsf(roll_out),fabsf(yaw_out)));
+        return fmaxf(fmaxf(fabsf(forward_out),fabsf(pitch_out)), fmaxf(fabsf(roll_out),fabsf(yaw_out)));
     }
 
 };

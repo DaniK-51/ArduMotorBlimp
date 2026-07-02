@@ -1020,17 +1020,17 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     else {
         blimp.motors->forward_out = actuator.x;
     }
-    if (zero.y) {
-        blimp.motors->roll_out = 0;
-    } else if (axes_disabled.y);
-    else {
-        blimp.motors->roll_out = actuator.y;
-    }
     if (zero.z) {
         blimp.motors->pitch_out = 0;
     } else if (axes_disabled.z);
     else {
         blimp.motors->pitch_out = act_down;
+    }
+    if (zero.y) {
+        blimp.motors->roll_out = 0;
+    } else if (axes_disabled.y);
+    else {
+        blimp.motors->roll_out = actuator.y;
     }
     if (zero.yaw) {
         blimp.motors->yaw_out  = 0;
