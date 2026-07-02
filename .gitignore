@@ -1,0 +1,20 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build output
+build/
+*.o
+*.d
+*.pyc
+__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# MiMoCode
+.mimocode/
