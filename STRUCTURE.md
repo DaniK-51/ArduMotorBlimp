@@ -100,9 +100,9 @@ ArduMotorBlimp/
 │   └── Loiter.h
 │
 ├── Control System
-│   ├── motors.cpp                 # Motor control
-│   ├── Fins.cpp                   # Fins/rudders control
-│   ├── Fins.h                     # Fins header
+│   ├── motors.cpp                 # Motor output and arming checks
+│   ├── Fins.cpp                   # Actuator mixing (frame-specific motor/servo output)
+│   ├── Fins.h                     # Fins header with output fields and mixing matrix
 │   ├── commands.cpp               # Command processing
 │   ├── radio.cpp                  # RC radio control
 │   └── inertia.cpp                # Inertial navigation
@@ -259,37 +259,45 @@ protected:
 
 ### 4. motors.cpp
 
-**Purpose:** Blimp motor control
+**Purpose:** Motor output and arming checks
 
-**Features:**
-- Support for various motor configurations
-- Control signal mixing
-- PWM range limiting
-- Battery voltage compensation
-
-**Example Usage:**
-```cpp
-// Initialize motors
-motors->init();
-
-// Set values
-motors->set_roll(roll_input);
-motors->set_pitch(pitch_input);
-motors->set_yaw(yaw_input);
-motors->set_throttle(throttle_input);
-
-// Output to motors
-motors->output();
-```
+**Key Functions:**
+- `motors_output()` — sends final PWM signals to servos/motors via `SRV_Channels`
+- `arm_motors_check()` — handles arming/disarming logic
+- Calls `motors->output()` which delegates to the Fins class
 
 ### 5. Fins.cpp / Fins.h
 
-**Purpose:** Blimp fins/rudders control
+**Purpose:** Actuator mixing — converts control outputs into per-motor signals
 
-**Functions:**
-- Aerodynamic surface control
-- Course stabilization
-- Wind compensation
+**Output fields (interface from Loiter):**
+```cpp
+float forward_out;  // forward movement, -1 to +1
+float roll_out;     // roll rotation, -1 to +1
+float pitch_out;    // pitch rotation, -1 to +1
+float yaw_out;      // yaw rotation, -1 to +1
+```
+
+**Supported frame types:**
+| Frame | Enum | Description |
+|-------|------|-------------|
+| `FISHBLIMP` | 1 | 4 fin servos (Back, Front, Right, Left) — sinusoidal flapping |
+| `FOUR_MOTOR` | 2 | 4 motors (FrontLeft, FrontRight, Up, Right) — linear mixing |
+| `ROTARY_BLIMP` | 3 | 4 motors — forward + 3 rotational axes mixing |
+
+**Mixing matrix:** Each motor has `_amp_factor` coefficients that define how much of each output axis it responds to:
+```cpp
+_thrpos[i] = forward_out * _forward_amp_factor[i]
+           + roll_out    * _roll_amp_factor[i]
+           + pitch_out   * _pitch_amp_factor[i]
+           + yaw_out     * _yaw_amp_factor[i];
+```
+
+**Key methods:**
+- `setup_rotary()` / `setup_motors()` / `setup_fins()` — define mixing matrix per frame
+- `output_rotary()` / `output_motors()` / `output_fins()` — apply mixing and send to SRV_Channels
+- `output_min()` — zero all outputs
+- `get_throttle()` — max absolute output across all axes (for MAVLink indicator)
 
 ### 6. GCS_Blimp.cpp / GCS_MAVLink_Blimp.cpp
 
@@ -333,13 +341,13 @@ def build(bld):
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_InputManager',        # Input management
-            'AP_Avoidance',           # Obstacle avoidance
-            'AP_LTM_Telem',          # LTM telemetry
-            'AP_Devo_Telem',         # Devo telemetry
-            'AP_KDECAN',             # KDECAN support
-            'AP_AdvancedFailsafe',   # Advanced failsafe
-            'AC_AttitudeControl',    # Attitude control
+            'AC_InputManager',
+            'AP_Avoidance',
+            'AP_LTM_Telem',
+            'AP_Devo_Telem',
+            'AP_KDECAN',
+            'AP_AdvancedFailsafe',   # TODO for some reason compiling GCS_Common.cpp (in libraries) fails if this isn't included.
+            'AC_AttitudeControl',    # for PSCx logging
         ],
     )
     
@@ -490,87 +498,120 @@ cd ArduMotorBlimp
 ### Control Architecture
 
 ```
-+---------------------------------------------------------+
-|  Pilot / GCS                                            |
-|  (RC channels / MAVLink commands)                       |
-+------------------------+--------------------------------+
-                         |
-                         v
-+---------------------------------------------------------+
-|  RC_Channel_Blimp                                       |
-|  - Read RC channels                                     |
-|  - Signal filtering                                     |
-|  - Failsafe check                                       |
-+------------------------+--------------------------------+
-                         |
-                         v
-+---------------------------------------------------------+
-|  Mode (current flight mode)                             |
-|  - Process commands                                     |
-|  - Generate target values                               |
-+------------------------+--------------------------------+
-                         |
-                         v
-+---------------------------------------------------------+
-|  AC_AttitudeControl / AC_PositionControl                |
-|  - Attitude PID controller                              |
-|  - Position PID controller                              |
-|  - Velocity PID controller                              |
-+------------------------+--------------------------------+
-                         |
-                         v
-+---------------------------------------------------------+
-|  motors.cpp / Fins.cpp                                  |
-|  - Signal mixing                                        |
-|  - Range limiting                                       |
-|  - Battery compensation                                 |
-+------------------------+--------------------------------+
-                         |
-                         v
-+---------------------------------------------------------+
-|  Motors / Fins                                          |
-|  (PWM signals 1000-2000 us)                             |
-+---------------------------------------------------------+
++-------------------------------------------------------------+
+|  Pilot / GCS                                                |
+|  (RC channels / MAVLink commands)                           |
++----------------------------+--------------------------------+
+                             |
+                             v
++-------------------------------------------------------------+
+|  Mode (current flight mode)                                 |
+|  - ModeManual    -> direct pilot control                    |
+|  - ModeVelocity  -> target velocity -> Loiter.run_vel()     |
+|  - ModeLoiter    -> target position -> Loiter.run()         |
+|  - Auto          -> mission (SCurve) -> Loiter.run()        |
+|  - RTL           -> return home     -> Loiter.run()         |
+|  - Land          -> landing         -> Loiter.run_vel()     |
+|  - Hold          -> full stop (all outputs = 0)             |
++----------------------------+--------------------------------+
+                             |
+                             v
++-------------------------------------------------------------+
+|  Loiter (cascade PID controller)                            |
+|                                                             |
+|  +-------------------+     +-------------------+            |
+|  |  Position PID      |---->|  Velocity PID      |           |
+|  |  pid_pos_{x,y,z,   |     |  pid_vel_{x,y,z,   |           |
+|  |        yaw}        |     |        yaw}        |           |
+|  |  pos -> vel        |     |  vel -> force      |           |
+|  +-------------------+     +--------+----------+            |
+|                                     |                        |
+|  Scaler: compensates coupled axes  |                        |
+|  (if motor0 is used for both       |                        |
+|   forward and pitch, scaler        |                        |
+|   reduces each axis contribution)  |                        |
++-------------------------------------+-----------------------+
+                                      |
+        motors->{forward_out, roll_out, pitch_out, yaw_out}
+                                      |
+                                      v
++-------------------------------------------------------------+
+|  Fins (actuator mixing)                                     |
+|                                                             |
+|  Takes 4 values and matrix-mixes into motor signals:        |
+|                                                             |
+|  _thrpos[i] = forward_out * _forward_amp_factor[i]          |
+|             + roll_out    * _roll_amp_factor[i]             |
+|             + pitch_out   * _pitch_amp_factor[i]            |
+|             + yaw_out     * _yaw_amp_factor[i]              |
+|                                                             |
+|  Frames: FISHBLIMP (fins), FOUR_MOTOR, ROTARY_BLIMP         |
++----------------------------+--------------------------------+
+                             |
+                             v
++-------------------------------------------------------------+
+|  Motors / Servos                                            |
+|  (PWM signals via SRV_Channels)                             |
++-------------------------------------------------------------+
 ```
 
-### PID Controllers
+### Separation of Concerns
 
-**Attitude Control:**
+**Loiter** -- does not know how motors are wired. Writes 4 values:
+`forward_out` (forward), `roll_out` (roll), `pitch_out` (pitch), `yaw_out` (yaw).
+
+**Fins** -- does not know where these values come from. Takes 4 values and through the `_amp_factor` matrix converts them into per-motor/servo signals.
+
+This separation allows changing the Fins interface without touching PID, and vice versa.
+
+### PID Cascade (Loiter)
+
+Two operating modes:
+
+1. **Full cascade** (`run()`): position -> velocity -> motors. Used in Loiter, RTL, Auto.
+2. **Velocity only** (`run_vel()`): velocity -> motors. Used in Velocity, Land.
+
+### Loiter Parameters
+
+| Parameter | Purpose |
+|-----------|---------|
+| `LOIT_VEL{X,Y,Z,YAW}_{P,I,D}` | Velocity PID per axis |
+| `LOIT_POS{X,Y,Z,YAW}_{P,I,D}` | Position PID per axis |
+| `LOIT_MAX_VEL{X,Y,Z,YAW}` | Maximum velocity |
+| `LOIT_MAX_POS{X,Y,Z,YAW}` | Maximum position change rate |
+| `LOIT_DIS_MASK` | Axis disable bitmask |
+| `LOIT_PID_DZ` | Position PID deadzone (m) |
+| `LOIT_POS_LAG` | Allowed target position lag (s) |
+
+### PID Examples
+
+All PID controllers are implemented in the `Loiter` class via the `AC_PID` library.
+
+**Position PID (position -> velocity):**
 ```cpp
-// Roll controller
-roll_error = desired_roll - current_roll;
-roll_output = Kp * roll_error + Ki * integral + Kd * derivative;
-
-// Pitch controller
-pitch_error = desired_pitch - current_pitch;
-pitch_output = Kp * pitch_error + Ki * integral + Kd * derivative;
-
-// Yaw controller
-yaw_error = desired_yaw - current_yaw;
-yaw_output = Kp * yaw_error + Ki * integral;
+// Loiter::run()
+target_vel_ef.x = pid_pos_x.update_all(target_pos.x, blimp.pos_ned.x, dt, limit.x);
+target_vel_ef.y = pid_pos_y.update_all(target_pos.y, blimp.pos_ned.y, dt, limit.y);
+target_vel_ef.z = pid_pos_z.update_all(target_pos.z, blimp.pos_ned.z, dt, limit.z);
+target_vel_yaw  = pid_pos_yaw.update_error(wrap_PI(target_yaw - yaw_ef), dt, limit.yaw);
 ```
 
-**Position Control:**
+**Velocity PID (velocity -> force/moment):**
 ```cpp
-// Horizontal position
-pos_error_x = desired_x - current_x;
-vel_desired_x = Kp * pos_error_x;
-
-pos_error_y = desired_y - current_y;
-vel_desired_y = Kp * pos_error_y;
-
-// Vertical position (altitude)
-alt_error = desired_alt - current_alt;
-vel_desired_z = Kp * alt_error;
+// Loiter::run_vel()
+actuator.x = pid_vel_x.update_all(target_vel_bf_c.x * scaler_x, vel_bf_filtd.x, dt, limit.x);
+actuator.y = pid_vel_y.update_all(target_vel_bf_c.y * scaler_y, vel_bf_filtd.y, dt, limit.y);
+act_down   = pid_vel_z.update_all(target_vel_bf_c.z * scaler_z, vel_bf_filtd.z, dt, limit.z);
+act_yaw    = pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yaw, blimp.vel_yaw_filtd, dt, limit.yaw);
 ```
 
-**Velocity Control:**
+**Direct pilot control (Manual mode, no PID):**
 ```cpp
-vel_error_x = desired_vel_x - current_vel_x;
-accel_output_x = Kp * vel_error_x + Ki * integral;
-
-vel_error_y = desired_vel_y - current_vel_y;
-accel_output_y = Kp * vel_error_y + Ki * integral;
+// ModeManual::run()
+motors->forward_out = pilot.x * g.max_man_thr;
+motors->roll_out    = pilot.y * g.max_man_thr;
+motors->pitch_out   = pilot.z * g.max_man_thr;
+motors->yaw_out     = pilot_yaw * g.max_man_thr;
 ```
 
 ---
@@ -830,8 +871,8 @@ libraries/                    # Common libraries
 **ArduMotorBlimp** contains:
 - Initial blimp implementation
 - Custom flight modes
-- Specific motor control logic
-- Integration with Fins
+- Fins interface with 3 frame types (FISHBLIMP, FOUR_MOTOR, ROTARY_BLIMP)
+- Cascade PID controller (Loiter) with position/velocity PIDs and axis scaler
 - Extended safety checks
 
 ### Update Process
@@ -872,7 +913,7 @@ git push origin main
 |                                                             |
 |  +-- Blimp.cpp                  # Main application          |
 |  +-- mode.cpp                   # Flight modes              |
-|  +-- motors.cpp                 # Motor control             |
+|  +-- motors.cpp                 # Motor output              |
 |  +-- ...                        # All components            |
 +-----------------------------+-------------------------------+
                               | Based on

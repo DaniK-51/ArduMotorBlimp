@@ -917,12 +917,12 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
 
     switch (blimp.motors->_frame) {
         case Fins::MOTOR_FRAME_FISHBLIMP: {
-            float xz_out = fabsf(blimp.motors->front_out) + fabsf(blimp.motors->down_out);
+            float xz_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->pitch_out);
             if (xz_out > 1.0f) {
                 scaler_x_n = 1.0f / xz_out;
                 scaler_z_n = 1.0f / xz_out;
             }
-            float yyaw_out = fabsf(blimp.motors->right_out) + fabsf(blimp.motors->yaw_out);
+            float yyaw_out = fabsf(blimp.motors->roll_out) + fabsf(blimp.motors->yaw_out);
             if (yyaw_out > 1.0f) {
                 scaler_y_n = 1.0f / yyaw_out;
                 scaler_yaw_n = 1.0f / yyaw_out;
@@ -930,10 +930,19 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
             break;
         }
         case Fins::MOTOR_FRAME_FOUR_MOTOR: {
-            float xyaw_out = fabsf(blimp.motors->front_out) + fabsf(blimp.motors->yaw_out);
+            float xyaw_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->yaw_out);
             if (xyaw_out > 1.0f) {
                 scaler_x_n = 1.0f / xyaw_out;
                 scaler_yaw_n = 1.0f / xyaw_out;
+            }
+            break;
+        }
+        case Fins::MOTOR_FRAME_ROTARY_BLIMP: {
+            float fpy_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->pitch_out) + fabsf(blimp.motors->yaw_out);
+            if (fpy_out > 1.0f) {
+                scaler_x_n = 1.0f / fpy_out;
+                scaler_z_n = 1.0f / fpy_out;
+                scaler_yaw_n = 1.0f / fpy_out;
             }
             break;
         }
@@ -1006,22 +1015,22 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
 
     //We're already in body-frame, so we can output directly.
     if (zero.x) {
-        blimp.motors->front_out = 0;
+        blimp.motors->forward_out = 0;
     } else if (axes_disabled.x);
     else {
-        blimp.motors->front_out = actuator.x;
+        blimp.motors->forward_out = actuator.x;
     }
     if (zero.y) {
-        blimp.motors->right_out = 0;
+        blimp.motors->roll_out = 0;
     } else if (axes_disabled.y);
     else {
-        blimp.motors->right_out = actuator.y;
+        blimp.motors->roll_out = actuator.y;
     }
     if (zero.z) {
-        blimp.motors->down_out = 0;
+        blimp.motors->pitch_out = 0;
     } else if (axes_disabled.z);
     else {
-        blimp.motors->down_out = act_down;
+        blimp.motors->pitch_out = act_down;
     }
     if (zero.yaw) {
         blimp.motors->yaw_out  = 0;

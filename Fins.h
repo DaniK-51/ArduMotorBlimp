@@ -18,6 +18,7 @@ public:
         MOTOR_FRAME_UNDEFINED = 0,
         MOTOR_FRAME_FISHBLIMP = 1,
         MOTOR_FRAME_FOUR_MOTOR = 2,
+        MOTOR_FRAME_ROTARY_BLIMP = 3,
     };
 
     //Need this class variable (rather than using the parameter directly) because if the user changes the parameter, we don't want the frame to change immediately, only on reboot.
@@ -62,14 +63,14 @@ private:
     float              _freq[NUM_FINS]; //frequency multiplier
     float              _thrpos[NUM_FINS]; //servo positions or motor throttles
 
-    float               _right_amp_factor[NUM_FINS];
-    float               _front_amp_factor[NUM_FINS];
-    float               _down_amp_factor[NUM_FINS];
+    float               _roll_amp_factor[NUM_FINS];
+    float               _forward_amp_factor[NUM_FINS];
+    float               _pitch_amp_factor[NUM_FINS];
     float               _yaw_amp_factor[NUM_FINS];
 
-    float               _right_off_factor[NUM_FINS];
-    float               _front_off_factor[NUM_FINS];
-    float               _down_off_factor[NUM_FINS];
+    float               _roll_off_factor[NUM_FINS];
+    float               _forward_off_factor[NUM_FINS];
+    float               _pitch_off_factor[NUM_FINS];
     float               _yaw_off_factor[NUM_FINS];
 
     int8_t              _num_added;
@@ -78,16 +79,18 @@ private:
 
     void setup_fins();
     void setup_motors();
+    void setup_rotary();
     void output_fins();
     void output_motors();
-    void add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac, float right_off_fac, float front_off_fac, float yaw_off_fac, float down_off_fac);
-    void add_motor(int8_t fin_num, float right_amp_fac, float front_amp_fac, float yaw_amp_fac, float down_amp_fac);
+    void output_rotary();
+    void add_fin(int8_t fin_num, float roll_amp_fac, float forward_amp_fac, float yaw_amp_fac, float pitch_amp_fac, float roll_off_fac, float forward_off_fac, float yaw_off_fac, float pitch_off_fac);
+    void add_motor(int8_t fin_num, float roll_amp_fac, float forward_amp_fac, float yaw_amp_fac, float pitch_amp_fac);
 
 public:
-    float               right_out;                  //input right movement, negative for left, +1 to -1
-    float               front_out;                  //input front/forwards movement, negative for backwards, +1 to -1
+    float               forward_out;                //input forward movement, negative for backwards, +1 to -1
+    float               roll_out;                   //input roll rotation, +1 to -1
     float               yaw_out;                    //input yaw, +1 to -1
-    float               down_out;                   //input height control, +1 to -1
+    float               pitch_out;                  //input pitch rotation, +1 to -1
 
     AP_Float            freq_hz;
     AP_Int8             turbo_mode;
@@ -103,7 +106,7 @@ public:
         //Only for Mavlink - essentially just an indicator of how hard the fins are working.
         //Note that this is the unconstrained version, so if the higher level control gives too high input,
         //throttle will be displayed as more than 100.
-        return fmaxf(fmaxf(fabsf(down_out),fabsf(front_out)), fmaxf(fabsf(right_out),fabsf(yaw_out)));
+        return fmaxf(fmaxf(fabsf(pitch_out),fabsf(forward_out)), fmaxf(fabsf(roll_out),fabsf(yaw_out)));
     }
 
 };

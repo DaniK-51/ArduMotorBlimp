@@ -361,7 +361,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame class
     // @Description: Controls frame for blimp.
-    // @Values: 0:Finnedblimp
+    // @Values: 0:Finnedblimp,3:RotaryBlimp
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),

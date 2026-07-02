@@ -100,9 +100,9 @@ ArduMotorBlimp/
 │       Loiter.h
 │
 ── Система управления
-│   ├── motors.cpp                 # Управление моторами
-│   ├── Fins.cpp                   # Управление плавниками/рулями
-│   ├── Fins.h                     # Заголовок Fins
+│   ├── motors.cpp                 # Вывод на моторы и проверки арминга
+│   ├── Fins.cpp                   # Смешивание актуаторов (frame-specific motor/servo output)
+│   ├── Fins.h                     # Заголовок Fins с выходными полями и матрицей смешивания
 │   ├── commands.cpp               # Обработка команд
 │   ├── radio.cpp                  # RC радио управление
 │   └── inertia.cpp                # Инерциальная навигация
@@ -259,37 +259,45 @@ protected:
 
 ### 4. motors.cpp
 
-**Назначение:** Управление моторами дирижабля
+**Назначение:** Вывод на моторы и проверки арминга
 
-**Особенности:**
-- Поддержка различных конфигураций моторов
-- Смешивание сигналов управления
-- Ограничение PWM диапазонов
-- Компенсация напряжения батареи
-
-**Пример использования:**
-```cpp
-// Инициализация моторов
-motors->init();
-
-// Установка значений
-motors->set_roll(roll_input);
-motors->set_pitch(pitch_input);
-motors->set_yaw(yaw_input);
-motors->set_throttle(throttle_input);
-
-// Вывод на моторы
-motors->output();
-```
+**Ключевые функции:**
+- `motors_output()` — отправляет финальные PWM-сигналы на серво/моторы через `SRV_Channels`
+- `arm_motors_check()` — логика арминга/дизарминга
+- Вызывает `motors->output()`, который делегирует работу классу Fins
 
 ### 5. Fins.cpp / Fins.h
 
-**Назначение:** Управление плавниками/рулями дирижабля
+**Назначение:** Смешивание актуаторов — преобразует выходы управления в сигналы для каждого мотора
 
-**Функции:**
-- Управление аэродинамическими поверхностями
-- Стабилизация курса
-- Компенсация ветра
+**Выходные поля (интерфейс от Loiter):**
+```cpp
+float forward_out;  // движение вперёд, -1 до +1
+float roll_out;     // вращение roll, -1 до +1
+float pitch_out;    // вращение pitch, -1 до +1
+float yaw_out;      // вращение yaw, -1 до +1
+```
+
+**Поддерживаемые типы фреймов:**
+| Фрейм | Enum | Описание |
+|-------|------|----------|
+| `FISHBLIMP` | 1 | 4 серво ластовиков (Back, Front, Right, Left) — синусоидальное движение |
+| `FOUR_MOTOR` | 2 | 4 мотора (FrontLeft, FrontRight, Up, Right) — линейное смешивание |
+| `ROTARY_BLIMP` | 3 | 4 мотора — forward + 3 вращательные оси |
+
+**Матрица смешивания:** Каждый мотор имеет коэффициенты `_amp_factor`, определяющие какую долю каждого выхода он использует:
+```cpp
+_thrpos[i] = forward_out * _forward_amp_factor[i]
+           + roll_out    * _roll_amp_factor[i]
+           + pitch_out   * _pitch_amp_factor[i]
+           + yaw_out     * _yaw_amp_factor[i];
+```
+
+**Ключевые методы:**
+- `setup_rotary()` / `setup_motors()` / `setup_fins()` — определяют матрицу смешивания для каждого фрейма
+- `output_rotary()` / `output_motors()` / `output_fins()` — применяют смешивание и отправляют в SRV_Channels
+- `output_min()` — обнуляет все выходы
+- `get_throttle()` — макс. абсолютное значение по всем осям (индикатор для MAVLink)
 
 ### 6. GCS_Blimp.cpp / GCS_MAVLink_Blimp.cpp
 
@@ -333,13 +341,13 @@ def build(bld):
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_InputManager',        # Управление входами
-            'AP_Avoidance',           # Избегание препятствий
-            'AP_LTM_Telem',          # LTM телеметрия
-            'AP_Devo_Telem',         # Devo телеметрия
-            'AP_KDECAN',             # KDECAN поддержка
-            'AP_AdvancedFailsafe',   # Расширенный failsafe
-            'AC_AttitudeControl',    # Контроль ориентации
+            'AC_InputManager',
+            'AP_Avoidance',
+            'AP_LTM_Telem',
+            'AP_Devo_Telem',
+            'AP_KDECAN',
+            'AP_AdvancedFailsafe',   # TODO по какой-то причине компиляция GCS_Common.cpp (в libraries) падает без этого
+            'AC_AttitudeControl',    # для логирования PSCx
         ],
     )
     
@@ -490,82 +498,117 @@ cd ArduMotorBlimp
 ### Архитектура управления
 
 ```
-┌─────────────────────────────────────────────────────────
-│  Пилот / GCS                                            │
-│  (RC каналы / MAVLink команды)                          │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-─────────────────────────────────────────────────────────┐
-│  RC_Channel_Blimp                                       │
-│  • Чтение RC каналов                                    │
-│  • Фильтрация сигналов                                  │
-│  • Проверка failsafe                                    │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  Mode (текущий режим полета)                            │
-│  • Обработка команд                                     │
-│  • Генерация целевых значений                           │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  AC_AttitudeControl / AC_PositionControl                │
-│  • PID контроллер ориентации                            │
-│  • PID контроллер позиции                               │
-│  • PID контроллер скорости                              │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  motors.cpp / Fins.cpp                                  │
-│  • Смешивание сигналов                                  │
-│  • Ограничение диапазонов                               │
-│  • Компенсация батареи                                  │
-└──────────────────┬──────────────────────────────────────┘
-                   ▼
-┌─────────────────────────────────────────────────────────┐
-│  Моторы / Плавники                                      │
-│  (PWM сигналы 1000-2000 мкс)                            │
-─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Пилот / GCS                                                │
+│  (RC каналы / MAVLink команды)                              │
+└──────────────────────────┬──────────────────────────────────┘
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Mode (текущий режим полета)                                │
+│  • ModeManual    → прямой пилотаж                           │
+│  • ModeVelocity  → целевая скорость → Loiter.run_vel()      │
+│  • ModeLoiter    → целевая позиция  → Loiter.run()          │
+│  • ModeAuto      → миссия (SCurve)  → Loiter.run()         │
+│  • ModeRTL       → возврат домой    → Loiter.run()          │
+│  • ModeLand      → посадка          → Loiter.run_vel()      │
+│  • ModeHold      → полная остановка (все выходы = 0)        │
+└──────────────────────────┬──────────────────────────────────┘
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Loiter (каскадный PID-контроллер)                          │
+│                                                             │
+│  ┌───────────────────┐     ┌───────────────────┐            │
+│  │  Position PID      │────▶│  Velocity PID      │           │
+│  │  pid_pos_{x,y,z,   │     │  pid_vel_{x,y,z,   │           │
+│  │        yaw}        │     │        yaw}        │           │
+│  │  pos → vel         │     │  vel → force       │           │
+│  └───────────────────┘     └────────┬──────────┘            │
+│                                     │                        │
+│  Scaler: компенсация связи осей    │                        │
+│  (если motor0 используется и для   │                        │
+│   forward, и для pitch — scaler    │                        │
+│   уменьшает вклад каждой оси)      │                        │
+└─────────────────────────────────────┼──────────────────────┘
+                                      │
+              motors->{forward_out, roll_out, pitch_out, yaw_out}
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Fins (смешивание актуаторов)                               │
+│                                                             │
+│  Берёт 4 числа и матрично смешивает в сигналы моторов:     │
+│                                                             │
+│  _thrpos[i] = forward_out * _forward_amp_factor[i]          │
+│             + roll_out    * _roll_amp_factor[i]             │
+│             + pitch_out   * _pitch_amp_factor[i]            │
+│             + yaw_out     * _yaw_amp_factor[i]              │
+│                                                             │
+│  Фреймы: FISHBLIMP (ластовики), FOUR_MOTOR, ROTARY_BLIMP    │
+└──────────────────────────┬──────────────────────────────────┘
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Моторы / Серво                                             │
+│  (PWM сигналы через SRV_Channels)                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### PID контроллеры
+### Разделение ответственности
 
-**Attitude Control (ориентация):**
+**Loiter** — не знает как устроены моторы. Пишет 4 числа:
+`forward_out` (вперёд), `roll_out` (крен), `pitch_out` (тангаж), `yaw_out` (рыскание).
+
+**Fins** — не знает откуда пришли эти числа. Берёт 4 числа и через матрицу `_amp_factor` преобразует в сигналы для каждого мотора/серво.
+
+Благодаря этому разделению Fins interface можно менять не трогая PID, и наоборот.
+
+### Каскад PID (Loiter)
+
+Два режима работы:
+
+1. **Полный каскад** (`run()`): позиция → скорость → моторы. Используется в Loiter, RTL, Auto.
+2. **Только скорость** (`run_vel()`): скорость → моторы. Используется в Velocity, Land.
+
+### Параметры Loiter
+
+| Параметр | Назначение |
+|----------|------------|
+| `LOIT_VEL{X,Y,Z,YAW}_{P,I,D}` | PID скорости по каждой оси |
+| `LOIT_POS{X,Y,Z,YAW}_{P,I,D}` | PID позиции по каждой оси |
+| `LOIT_MAX_VEL{X,Y,Z,YAW}` | Максимальная скорость |
+| `LOIT_MAX_POS{X,Y,Z,YAW}` | Максимальная скорость изменения позиции |
+| `LOIT_DIS_MASK` | Отключение осей (битовая маска) |
+| `LOIT_PID_DZ` | Мёртвая зона позиционного PID (м) |
+| `LOIT_POS_LAG` | Допустимое отставание целевой позиции (с) |
+
+### Примеры работы PID
+
+Все PID-контроллеры реализованы в классе `Loiter` через библиотеку `AC_PID`.
+
+**Position PID (позиция → скорость):**
 ```cpp
-// Roll контроллер
-roll_error = desired_roll - current_roll;
-roll_output = Kp * roll_error + Ki * integral + Kd * derivative;
-
-// Pitch контроллер
-pitch_error = desired_pitch - current_pitch;
-pitch_output = Kp * pitch_error + Ki * integral + Kd * derivative;
-
-// Yaw контроллер
-yaw_error = desired_yaw - current_yaw;
-yaw_output = Kp * yaw_error + Ki * integral;
+// Loiter::run()
+target_vel_ef.x = pid_pos_x.update_all(target_pos.x, blimp.pos_ned.x, dt, limit.x);
+target_vel_ef.y = pid_pos_y.update_all(target_pos.y, blimp.pos_ned.y, dt, limit.y);
+target_vel_ef.z = pid_pos_z.update_all(target_pos.z, blimp.pos_ned.z, dt, limit.z);
+target_vel_yaw  = pid_pos_yaw.update_error(wrap_PI(target_yaw - yaw_ef), dt, limit.yaw);
 ```
 
-**Position Control (позиция):**
+**Velocity PID (скорость → сила/момент):**
 ```cpp
-// Горизонтальная позиция
-pos_error_x = desired_x - current_x;
-vel_desired_x = Kp * pos_error_x;
-
-pos_error_y = desired_y - current_y;
-vel_desired_y = Kp * pos_error_y;
-
-// Вертикальная позиция (высота)
-alt_error = desired_alt - current_alt;
-vel_desired_z = Kp * alt_error;
+// Loiter::run_vel()
+actuator.x = pid_vel_x.update_all(target_vel_bf_c.x * scaler_x, vel_bf_filtd.x, dt, limit.x);
+actuator.y = pid_vel_y.update_all(target_vel_bf_c.y * scaler_y, vel_bf_filtd.y, dt, limit.y);
+act_down   = pid_vel_z.update_all(target_vel_bf_c.z * scaler_z, vel_bf_filtd.z, dt, limit.z);
+act_yaw    = pid_vel_yaw.update_all(target_vel_yaw_c * scaler_yaw, blimp.vel_yaw_filtd, dt, limit.yaw);
 ```
 
-**Velocity Control (скорость):**
+**Прямой пилотаж (Manual mode, без PID):**
 ```cpp
-vel_error_x = desired_vel_x - current_vel_x;
-accel_output_x = Kp * vel_error_x + Ki * integral;
-
-vel_error_y = desired_vel_y - current_vel_y;
-accel_output_y = Kp * vel_error_y + Ki * integral;
+// ModeManual::run()
+motors->forward_out = pilot.x * g.max_man_thr;
+motors->roll_out    = pilot.y * g.max_man_thr;
+motors->pitch_out   = pilot.z * g.max_man_thr;
+motors->yaw_out     = pilot_yaw * g.max_man_thr;
 ```
 
 ---
@@ -823,11 +866,11 @@ libraries/                    # Общие библиотеки
 ### Отличия от стандартного Blimp
 
 **ArduMotorBlimp** содержит:
-- ✅ Начальную реализацию дирижабля
-- ✅ Кастомные режимы полета
-- ✅ Специфичную логику управления моторами
-- ✅ Интеграцию с Fins (плавниками)
-- ✅ Расширенные проверки безопасности
+- Начальную реализацию дирижабля
+- Кастомные режимы полета
+- Fins interface с 3 типами фреймов (FISHBLIMP, FOUR_MOTOR, ROTARY_BLIMP)
+- Каскадный PID-контроллер (Loiter) с позиционными/скоростными PID и scaler осей
+- Расширенные проверки безопасности
 
 ### Процесс обновления
 
@@ -867,7 +910,7 @@ git push origin main
 │                                                             │
 │  ├── Blimp.cpp                  # Main application          │
 │  ├── mode.cpp                   # Flight modes              │
-│  ├── motors.cpp                 # Motor control             │
+│  ├── motors.cpp                 # Motor output              │
 │  └── ...                        # Все компоненты            │
 └────────────────────┬────────────────────────────────────────┘
                      │ Основан на
