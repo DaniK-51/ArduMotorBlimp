@@ -18,6 +18,6 @@ def build(bld):
 
     bld.ap_program(
         program_name='ardublimp',
-        program_groups=['bin', 'blimp'],
+        program_groups=['bin', 'ardumotorblimp'],
         use=vehicle + '_libs',
         )
