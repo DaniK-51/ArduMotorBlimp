@@ -916,27 +916,6 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     float scaler_yaw_n = 1;
 
     switch (blimp.motors->_frame) {
-        case Fins::MOTOR_FRAME_FISHBLIMP: {
-            float xz_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->pitch_out);
-            if (xz_out > 1.0f) {
-                scaler_x_n = 1.0f / xz_out;
-                scaler_z_n = 1.0f / xz_out;
-            }
-            float yyaw_out = fabsf(blimp.motors->roll_out) + fabsf(blimp.motors->yaw_out);
-            if (yyaw_out > 1.0f) {
-                scaler_y_n = 1.0f / yyaw_out;
-                scaler_yaw_n = 1.0f / yyaw_out;
-            }
-            break;
-        }
-        case Fins::MOTOR_FRAME_FOUR_MOTOR: {
-            float xyaw_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->yaw_out);
-            if (xyaw_out > 1.0f) {
-                scaler_x_n = 1.0f / xyaw_out;
-                scaler_yaw_n = 1.0f / xyaw_out;
-            }
-            break;
-        }
         case Fins::MOTOR_FRAME_ROTARY_BLIMP: {
             float fpy_out = fabsf(blimp.motors->forward_out) + fabsf(blimp.motors->pitch_out) + fabsf(blimp.motors->yaw_out);
             if (fpy_out > 1.0f) {

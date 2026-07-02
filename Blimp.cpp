@@ -234,11 +234,6 @@ void Blimp::read_AHRS(void)
     vel_yaw = ahrs.get_yaw_rate_earth();
 
     switch (motors->_frame) {
-        case Fins::MOTOR_FRAME_FISHBLIMP:
-            vel_ned_filtd = {vel_x_filter.apply(vel_ned.x), vel_y_filter.apply(vel_ned.y), vel_z_filter.apply(vel_ned.z)};
-            vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
-            break;
-        case Fins::MOTOR_FRAME_FOUR_MOTOR:
         case Fins::MOTOR_FRAME_ROTARY_BLIMP:
         case Fins::MOTOR_FRAME_UNDEFINED:
             vel_ned_filtd = vel_ned;

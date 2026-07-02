@@ -16,8 +16,6 @@ public:
 
     enum motor_frame {
         MOTOR_FRAME_UNDEFINED = 0,
-        MOTOR_FRAME_FISHBLIMP = 1,
-        MOTOR_FRAME_FOUR_MOTOR = 2,
         MOTOR_FRAME_ROTARY_BLIMP = 3,
     };
 
@@ -77,13 +75,8 @@ private:
 
     bool _initialised_ok;    // 1 if initialisation was successful
 
-    void setup_fins();
-    void setup_motors();
     void setup_rotary();
-    void output_fins();
-    void output_motors();
     void output_rotary();
-    void add_fin(int8_t fin_num, float forward_amp_fac, float pitch_amp_fac, float roll_amp_fac, float yaw_amp_fac, float forward_off_fac, float pitch_off_fac, float roll_off_fac, float yaw_off_fac);
     void add_motor(int8_t fin_num, float forward_amp_fac, float pitch_amp_fac, float roll_amp_fac, float yaw_amp_fac);
 
 public:
