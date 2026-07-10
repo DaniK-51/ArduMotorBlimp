@@ -113,12 +113,12 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
 
     static const int8_t axes[] = {
         PID_SEND::VELX,
-        PID_SEND::VELY,
-        PID_SEND::VELZ,
+        PID_SEND::VELPITCH,
+        PID_SEND::VELROLL,
         PID_SEND::VELYAW,
         PID_SEND::POSX,
-        PID_SEND::POSY,
-        PID_SEND::POSZ,
+        PID_SEND::POSPITCH,
+        PID_SEND::POSROLL,
         PID_SEND::POSYAW
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
@@ -131,25 +131,25 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         const AP_PIDInfo *pid_info = nullptr;
         switch (axes[i]) {
         case PID_SEND::VELX:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            pid_info = &blimp.pid_vel_x.get_pid_info();
             break;
-        case PID_SEND::VELY:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+        case PID_SEND::VELPITCH:
+            pid_info = &blimp.pid_vel_pitch.get_pid_info();
             break;
-        case PID_SEND::VELZ:
-            pid_info = &blimp.pid_vel_z.get_pid_info();
+        case PID_SEND::VELROLL:
+            pid_info = &blimp.pid_vel_roll.get_pid_info();
             break;
         case PID_SEND::VELYAW:
             pid_info = &blimp.pid_vel_yaw.get_pid_info();
             break;
         case PID_SEND::POSX:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            pid_info = &blimp.pid_pos_x.get_pid_info();
             break;
-        case PID_SEND::POSY:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+        case PID_SEND::POSPITCH:
+            pid_info = &blimp.pid_pos_pitch.get_pid_info();
             break;
-        case PID_SEND::POSZ:
-            pid_info = &blimp.pid_pos_z.get_pid_info();
+        case PID_SEND::POSROLL:
+            pid_info = &blimp.pid_pos_roll.get_pid_info();
             break;
         case PID_SEND::POSYAW:
             pid_info = &blimp.pid_pos_yaw.get_pid_info();
@@ -481,6 +481,36 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT GCS_MAVLINK_Blimp::handle_mission_item_int(const mavlink_command_int_t &packet)
+{
+    // Convert MAVLink frame to Location
+    Location loc;
+    loc.lat = packet.x;  // latitude * 1e7
+    loc.lng = packet.y;  // longitude * 1e7
+    loc.alt = packet.z * 100;  // meters to cm
+
+    // Determine frame
+    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT) {
+        loc.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    } else if (packet.frame == MAV_FRAME_GLOBAL) {
+        loc.frame = MAV_FRAME_GLOBAL;
+    } else {
+        loc.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    }
+
+    // Store waypoint in auto mode
+    if (blimp.control_mode == Mode::Number::AUTO) {
+        uint8_t index = packet.param1;
+        float yaw = packet.param4;
+
+        // Clear and set waypoint at index
+        blimp.mode_auto.clear_mission();
+        blimp.mode_auto.set_target(loc, yaw);
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -488,6 +518,8 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
         return handle_command_int_do_reposition(packet);
     case MAV_CMD_NAV_TAKEOFF:
         return MAV_RESULT_ACCEPTED;
+    case MAV_CMD_MISSION_ITEM_INT:
+        return handle_mission_item_int(packet);
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }

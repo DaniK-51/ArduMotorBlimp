@@ -22,9 +22,9 @@ void ModeLoiter::run()
     Vector3f pilot;
     float pilot_yaw;
     get_pilot_input(pilot, pilot_yaw);
-    pilot.x *= g.max_pos_xy * dt;
-    pilot.y *= g.max_pos_xy * dt;
-    pilot.z *= g.max_pos_z * dt;
+    pilot.x *= g.max_pos_x * dt;
+    pilot.y *= g.max_pos_roll * dt;
+    pilot.z *= g.max_pos_pitch * dt;
     pilot_yaw *= g.max_pos_yaw * dt;
 
     if (g.simple_mode == 0) {
@@ -32,13 +32,13 @@ void ModeLoiter::run()
         blimp.rotate_BF_to_NE(pilot.xy());
     }
 
-    if (fabsf(target_pos.x-blimp.pos_ned.x) < (g.max_pos_xy*POS_LAG)) {
+    if (fabsf(target_pos.x-blimp.pos_ned.x) < (g.max_pos_x*POS_LAG)) {
         target_pos.x += pilot.x;
     }
-    if (fabsf(target_pos.y-blimp.pos_ned.y) < (g.max_pos_xy*POS_LAG)) {
+    if (fabsf(target_pos.y-blimp.pos_ned.y) < (g.max_pos_roll*POS_LAG)) {
         target_pos.y += pilot.y;
     }
-    if (fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_z*POS_LAG)) {
+    if (fabsf(target_pos.z-blimp.pos_ned.z) < (g.max_pos_pitch*POS_LAG)) {
         target_pos.z += pilot.z;
     }
     if (fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (g.max_pos_yaw*POS_LAG)) {

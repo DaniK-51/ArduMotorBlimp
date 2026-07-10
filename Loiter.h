@@ -42,14 +42,14 @@ public:
     friend class Blimp;
     friend class Fins;
 
-    float scaler_xz;
-    float scaler_yyaw;
+    float scaler_xr;
+    float scaler_pyaw;
 
     //constructor
     Loiter(uint16_t loop_rate)
     {
-        scaler_xz = 1;
-        scaler_yyaw = 1;
+        scaler_xr = 1;
+        scaler_pyaw = 1;
     };
 
     //Run Loiter controller with target position and yaw in global frame. Expects to be called at loop rate.

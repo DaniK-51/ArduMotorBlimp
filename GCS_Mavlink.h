@@ -30,6 +30,7 @@ protected:
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_mission_item_int(const mavlink_command_int_t &packet);
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
     bool mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const override;
@@ -70,12 +71,12 @@ private:
     //This is 1-indexed, unlike most enums for consistency with the mavlink PID_TUNING enums.
     enum PID_SEND : uint8_t {
         VELX =        1,
-        VELY =        2,
-        VELZ =        3,
+        VELPITCH =    2,
+        VELROLL =     3,
         VELYAW =      4,
         POSX =        5,
-        POSY =        6,
-        POSZ =        7,
+        POSPITCH =    6,
+        POSROLL =     7,
         POSYAW =      8,
     };
 

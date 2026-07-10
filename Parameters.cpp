@@ -120,7 +120,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER
+    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER,4:RTL,5:AUTO
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 
@@ -208,19 +208,26 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_crash_check, "FS_CRASH_CHECK",    1),
 
-    // @Param: MAX_VEL_XY
-    // @DisplayName: Max XY Velocity
-    // @Description: Sets the maximum XY velocity, in m/s
+    // @Param: MAX_VEL_X
+    // @DisplayName: Max X Velocity
+    // @Description: Sets the maximum X (forward/backward) velocity, in m/s
     // @Range: 0.2 5
     // @User: Standard
-    GSCALAR(max_vel_xy, "MAX_VEL_XY", 0.5),
+    GSCALAR(max_vel_x, "MAX_VEL_X", 0.5),
 
-    // @Param: MAX_VEL_Z
-    // @DisplayName: Max Z Velocity
-    // @Description: Sets the maximum Z velocity, in m/s
+    // @Param: MAX_VEL_PITCH
+    // @DisplayName: Max Pitch Velocity
+    // @Description: Sets the maximum pitch velocity, in rad/s
     // @Range: 0.2 5
     // @User: Standard
-    GSCALAR(max_vel_z, "MAX_VEL_Z", 0.4),
+    GSCALAR(max_vel_pitch, "MAX_VEL_PITCH", 0.4),
+
+    // @Param: MAX_VEL_ROLL
+    // @DisplayName: Max Roll Velocity
+    // @Description: Sets the maximum roll velocity, in rad/s
+    // @Range: 0.2 5
+    // @User: Standard
+    GSCALAR(max_vel_roll, "MAX_VEL_ROLL", 0.4),
 
     // @Param: MAX_VEL_YAW
     // @DisplayName: Max yaw Velocity
@@ -229,19 +236,26 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Standard
     GSCALAR(max_vel_yaw, "MAX_VEL_YAW", 0.5),
 
-    // @Param: MAX_POS_XY
-    // @DisplayName: Max XY Position change
-    // @Description: Sets the maximum XY position change, in m/s
+    // @Param: MAX_POS_X
+    // @DisplayName: Max X Position change
+    // @Description: Sets the maximum X (forward/backward) position change, in m/s
     // @Range: 0.1 5
     // @User: Standard
-    GSCALAR(max_pos_xy, "MAX_POS_XY", 0.2),
+    GSCALAR(max_pos_x, "MAX_POS_X", 0.2),
 
-    // @Param: MAX_POS_Z
-    // @DisplayName: Max Z Position change
-    // @Description: Sets the maximum Z position change, in m/s
+    // @Param: MAX_POS_PITCH
+    // @DisplayName: Max Pitch Position change
+    // @Description: Sets the maximum pitch position change, in rad/s
     // @Range: 0.1 5
     // @User: Standard
-    GSCALAR(max_pos_z, "MAX_POS_Z", 0.15),
+    GSCALAR(max_pos_pitch, "MAX_POS_PITCH", 0.15),
+
+    // @Param: MAX_POS_ROLL
+    // @DisplayName: Max Roll Position change
+    // @Description: Sets the maximum roll position change, in rad/s
+    // @Range: 0.1 5
+    // @User: Standard
+    GSCALAR(max_pos_roll, "MAX_POS_ROLL", 0.15),
 
     // @Param: MAX_POS_YAW
     // @DisplayName: Max Yaw Position change
@@ -259,8 +273,8 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: DIS_MASK
     // @DisplayName: Disable output mask
-    // @Description: Mask for disabling (setting to zero) one or more of the 4 output axis in mode Velocity or Loiter
-    // @Bitmask: 0:Right,1:Front,2:Down,3:Yaw
+    // @Description: Mask for disabling (setting to zero) one or more of the 4 output axes in mode Velocity or Loiter
+    // @Bitmask: 0:Roll,1:X,2:Pitch,3:Yaw
     // @User: Standard
     GSCALAR(dis_mask, "DIS_MASK", 0),
 
@@ -396,111 +410,162 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
-    // @Group: FINS_
-    // @Path: Fins.cpp
-    GOBJECTPTR(motors, "FINS_", Fins),
+    // @Group: MOTOR_
+    // @Path: MotorMix.cpp
+    GOBJECTPTR(motors, "MOTOR_", MotorMix),
 
-    // @Param: VELXY_P
-    // @DisplayName: Velocity (horizontal) P gain
-    // @Description: Velocity (horizontal) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Param: VELX_P
+    // @DisplayName: Velocity (X) P gain
+    // @Description: Velocity (X forward/backward) P gain. Converts velocity error to acceleration.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: VELXY_I
-    // @DisplayName: Velocity (horizontal) I gain
-    // @Description: Velocity (horizontal) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Param: VELX_I
+    // @DisplayName: Velocity (X) I gain
+    // @Description: Velocity (X) I gain. Corrects long-term velocity error.
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: VELXY_D
-    // @DisplayName: Velocity (horizontal) D gain
-    // @Description: Velocity (horizontal) D gain.  Corrects short-term changes in velocity
+    // @Param: VELX_D
+    // @DisplayName: Velocity (X) D gain
+    // @Description: Velocity (X) D gain. Corrects short-term velocity changes.
     // @Range: 0.00 1.00
     // @Increment: 0.001
     // @User: Advanced
 
-    // @Param: VELXY_IMAX
-    // @DisplayName: Velocity (horizontal) integrator maximum
-    // @Description: Velocity (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Param: VELX_IMAX
+    // @DisplayName: Velocity (X) integrator maximum
+    // @Description: Velocity (X) integrator maximum.
     // @Range: 0 4500
     // @Increment: 10
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: VELXY_FLTE
-    // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Param: VELX_FLTE
+    // @DisplayName: Velocity (X) input filter
+    // @Description: Velocity (X) input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELXY_FLTD
-    // @DisplayName: Velocity (horizontal) input filter
-    // @Description: Velocity (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Param: VELX_FLTD
+    // @DisplayName: Velocity (X) D input filter
+    // @Description: Velocity (X) D input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELXY_FF
-    // @DisplayName: Velocity (horizontal) feed forward gain
-    // @Description: Velocity (horizontal) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Param: VELX_FF
+    // @DisplayName: Velocity (X) feed forward gain
+    // @Description: Velocity (X) feed forward gain.
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    GOBJECT(pid_vel_xy, "VELXY_", AC_PID_2D),
+    GOBJECT(pid_vel_x, "VELX_", AC_PID_Basic),
 
-    // @Param: VELZ_P
-    // @DisplayName: Velocity (vertical) P gain
-    // @Description: Velocity (vertical) P gain.  Converts the difference between desired and actual velocity to a target acceleration
+    // @Param: VELPITCH_P
+    // @DisplayName: Velocity (pitch) P gain
+    // @Description: Velocity (pitch) P gain. Converts pitch velocity error to acceleration.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: VELZ_I
-    // @DisplayName: Velocity (vertical) I gain
-    // @Description: Velocity (vertical) I gain.  Corrects long-term difference between desired and actual velocity to a target acceleration
+    // @Param: VELPITCH_I
+    // @DisplayName: Velocity (pitch) I gain
+    // @Description: Velocity (pitch) I gain.
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: VELZ_D
-    // @DisplayName: Velocity (vertical) D gain
-    // @Description: Velocity (vertical) D gain.  Corrects short-term changes in velocity
+    // @Param: VELPITCH_D
+    // @DisplayName: Velocity (pitch) D gain
+    // @Description: Velocity (pitch) D gain.
     // @Range: 0.00 1.00
     // @Increment: 0.001
     // @User: Advanced
 
-    // @Param: VELZ_IMAX
-    // @DisplayName: Velocity (vertical) integrator maximum
-    // @Description: Velocity (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Param: VELPITCH_IMAX
+    // @DisplayName: Velocity (pitch) integrator maximum
+    // @Description: Velocity (pitch) integrator maximum.
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: rad/s/s
     // @User: Advanced
 
-    // @Param: VELZ_FLTE
-    // @DisplayName: Velocity (vertical) input filter
-    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Param: VELPITCH_FLTE
+    // @DisplayName: Velocity (pitch) input filter
+    // @Description: Velocity (pitch) input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELZ_FLTD
-    // @DisplayName: Velocity (vertical) input filter
-    // @Description: Velocity (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Param: VELPITCH_FLTD
+    // @DisplayName: Velocity (pitch) D input filter
+    // @Description: Velocity (pitch) D input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELZ_FF
-    // @DisplayName: Velocity (vertical) feed forward gain
-    // @Description: Velocity (vertical) feed forward gain.  Converts the difference between desired velocity to a target acceleration
+    // @Param: VELPITCH_FF
+    // @DisplayName: Velocity (pitch) feed forward gain
+    // @Description: Velocity (pitch) feed forward gain.
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    GOBJECT(pid_vel_z, "VELZ_", AC_PID_Basic),
+    GOBJECT(pid_vel_pitch, "VELPITCH_", AC_PID_Basic),
+
+    // @Param: VELROLL_P
+    // @DisplayName: Velocity (roll) P gain
+    // @Description: Velocity (roll) P gain. Converts roll velocity error to acceleration.
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: VELROLL_I
+    // @DisplayName: Velocity (roll) I gain
+    // @Description: Velocity (roll) I gain.
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: VELROLL_D
+    // @DisplayName: Velocity (roll) D gain
+    // @Description: Velocity (roll) D gain.
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: VELROLL_IMAX
+    // @DisplayName: Velocity (roll) integrator maximum
+    // @Description: Velocity (roll) integrator maximum.
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: rad/s/s
+    // @User: Advanced
+
+    // @Param: VELROLL_FLTE
+    // @DisplayName: Velocity (roll) input filter
+    // @Description: Velocity (roll) input filter in Hz.
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELROLL_FLTD
+    // @DisplayName: Velocity (roll) D input filter
+    // @Description: Velocity (roll) D input filter in Hz.
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: VELROLL_FF
+    // @DisplayName: Velocity (roll) feed forward gain
+    // @Description: Velocity (roll) feed forward gain.
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_vel_roll, "VELROLL_", AC_PID_Basic),
 
     // @Param: VELYAW_P
     // @DisplayName: Velocity (yaw) P gain
@@ -546,107 +611,158 @@ const AP_Param::Info Blimp::var_info[] = {
     // @User: Advanced
     GOBJECT(pid_vel_yaw, "VELYAW_", AC_PID_Basic),
 
-    // @Param: POSXY_P
-    // @DisplayName: Position (horizontal) P gain
-    // @Description: Position (horizontal) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Param: POSX_P
+    // @DisplayName: Position (X) P gain
+    // @Description: Position (X forward/backward) P gain. Converts position error to velocity.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: POSXY_I
-    // @DisplayName: Position (horizontal) I gain
-    // @Description: Position (horizontal) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Param: POSX_I
+    // @DisplayName: Position (X) I gain
+    // @Description: Position (X) I gain.
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POSXY_D
-    // @DisplayName: Position (horizontal) D gain
-    // @Description: Position (horizontal) D gain.  Corrects short-term changes in position
+    // @Param: POSX_D
+    // @DisplayName: Position (X) D gain
+    // @Description: Position (X) D gain.
     // @Range: 0.00 1.00
     // @Increment: 0.001
     // @User: Advanced
 
-    // @Param: POSXY_IMAX
-    // @DisplayName: Position (horizontal) integrator maximum
-    // @Description: Position (horizontal) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Param: POSX_IMAX
+    // @DisplayName: Position (X) integrator maximum
+    // @Description: Position (X) integrator maximum.
     // @Range: 0 4500
     // @Increment: 10
     // @Units: cm/s/s
     // @User: Advanced
 
-    // @Param: POSXY_FLTE
-    // @DisplayName: Position (horizontal) input filter
-    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Param: POSX_FLTE
+    // @DisplayName: Position (X) input filter
+    // @Description: Position (X) input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSXY_FLTD
-    // @DisplayName: Position (horizontal) input filter
-    // @Description: Position (horizontal) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Param: POSX_FLTD
+    // @DisplayName: Position (X) D input filter
+    // @Description: Position (X) D input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSXY_FF
-    // @DisplayName: Position (horizontal) feed forward gain
-    // @Description: Position (horizontal) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Param: POSX_FF
+    // @DisplayName: Position (X) feed forward gain
+    // @Description: Position (X) feed forward gain.
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    GOBJECT(pid_pos_xy, "POSXY_", AC_PID_2D),
+    GOBJECT(pid_pos_x, "POSX_", AC_PID_Basic),
 
-    // @Param: POSZ_P
-    // @DisplayName: Position (vertical) P gain
-    // @Description: Position (vertical) P gain.  Converts the difference between desired and actual position to a target velocity
+    // @Param: POSPITCH_P
+    // @DisplayName: Position (pitch) P gain
+    // @Description: Position (pitch) P gain. Converts pitch position error to velocity.
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: POSZ_I
-    // @DisplayName: Position (vertical) I gain
-    // @Description: Position (vertical) I gain.  Corrects long-term difference between desired and actual position to a target velocity
+    // @Param: POSPITCH_I
+    // @DisplayName: Position (pitch) I gain
+    // @Description: Position (pitch) I gain.
     // @Range: 0.02 1.00
     // @Increment: 0.01
     // @User: Advanced
 
-    // @Param: POSZ_D
-    // @DisplayName: Position (vertical) D gain
-    // @Description: Position (vertical) D gain.  Corrects short-term changes in position
+    // @Param: POSPITCH_D
+    // @DisplayName: Position (pitch) D gain
+    // @Description: Position (pitch) D gain.
     // @Range: 0.00 1.00
     // @Increment: 0.001
     // @User: Advanced
 
-    // @Param: POSZ_IMAX
-    // @DisplayName: Position (vertical) integrator maximum
-    // @Description: Position (vertical) integrator maximum.  Constrains the target acceleration that the I gain will output
+    // @Param: POSPITCH_IMAX
+    // @DisplayName: Position (pitch) integrator maximum
+    // @Description: Position (pitch) integrator maximum.
     // @Range: 0 4500
     // @Increment: 10
-    // @Units: cm/s/s
+    // @Units: rad/s/s
     // @User: Advanced
 
-    // @Param: POSZ_FLTE
-    // @DisplayName: Position (vertical) input filter
-    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for P and I terms
+    // @Param: POSPITCH_FLTE
+    // @DisplayName: Position (pitch) input filter
+    // @Description: Position (pitch) input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSZ_FLTD
-    // @DisplayName: Position (vertical) input filter
-    // @Description: Position (vertical) input filter.  This filter (in Hz) is applied to the input for D term
+    // @Param: POSPITCH_FLTD
+    // @DisplayName: Position (pitch) D input filter
+    // @Description: Position (pitch) D input filter in Hz.
     // @Range: 0 100
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: POSZ_FF
-    // @DisplayName: Position (vertical) feed forward gain
-    // @Description: Position (vertical) feed forward gain.  Converts the difference between desired position to a target velocity
+    // @Param: POSPITCH_FF
+    // @DisplayName: Position (pitch) feed forward gain
+    // @Description: Position (pitch) feed forward gain.
     // @Range: 0 6
     // @Increment: 0.01
     // @User: Advanced
-    GOBJECT(pid_pos_z, "POSZ_", AC_PID_Basic),
+    GOBJECT(pid_pos_pitch, "POSPITCH_", AC_PID_Basic),
+
+    // @Param: POSROLL_P
+    // @DisplayName: Position (roll) P gain
+    // @Description: Position (roll) P gain. Converts roll position error to velocity.
+    // @Range: 0.1 6.0
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: POSROLL_I
+    // @DisplayName: Position (roll) I gain
+    // @Description: Position (roll) I gain.
+    // @Range: 0.02 1.00
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POSROLL_D
+    // @DisplayName: Position (roll) D gain
+    // @Description: Position (roll) D gain.
+    // @Range: 0.00 1.00
+    // @Increment: 0.001
+    // @User: Advanced
+
+    // @Param: POSROLL_IMAX
+    // @DisplayName: Position (roll) integrator maximum
+    // @Description: Position (roll) integrator maximum.
+    // @Range: 0 4500
+    // @Increment: 10
+    // @Units: rad/s/s
+    // @User: Advanced
+
+    // @Param: POSROLL_FLTE
+    // @DisplayName: Position (roll) input filter
+    // @Description: Position (roll) input filter in Hz.
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSROLL_FLTD
+    // @DisplayName: Position (roll) D input filter
+    // @Description: Position (roll) D input filter in Hz.
+    // @Range: 0 100
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: POSROLL_FF
+    // @DisplayName: Position (roll) feed forward gain
+    // @Description: Position (roll) feed forward gain.
+    // @Range: 0 6
+    // @Increment: 0.01
+    // @User: Advanced
+    GOBJECT(pid_pos_roll, "POSROLL_", AC_PID_Basic),
 
     // @Param: POSYAW_P
     // @DisplayName: Position (yaw) axis controller P gain

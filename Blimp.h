@@ -57,7 +57,7 @@
 #include "defines.h"
 #include "config.h"
 
-#include "Fins.h"
+#include "MotorMix.h"
 #include "Loiter.h"
 
 #include "RC_Channel.h"         // RC Channel Library
@@ -92,8 +92,9 @@ public:
     friend class ModeVelocity;
     friend class ModeLoiter;
     friend class ModeRTL;
+    friend class ModeAuto;
 
-    friend class Fins;
+    friend class MotorMix;
     friend class Loiter;
 
     Blimp(void);
@@ -189,7 +190,7 @@ private:
     }
 
     // Motor Output
-    Fins *motors;
+    MotorMix *motors;
     Loiter *loiter;
 
     int32_t _home_bearing;
@@ -225,14 +226,16 @@ private:
     // Inertial Navigation
     AP_InertialNav inertial_nav;
 
-    // Vel & pos PIDs
-    AC_PID_2D pid_vel_xy{3, 0.2, 0, 0, 0.2, 3, 3}; //These are the defaults - P I D FF IMAX FiltHz FiltDHz DT
-    AC_PID_Basic pid_vel_z{7, 1.5, 0, 0, 1, 3, 3};
+    // Vel & pos PIDs - new axes: x (linear), pitch (rotational), roll (rotational), yaw (rotational)
+    AC_PID_Basic pid_vel_x{3, 0.2, 0, 0, 0.2, 3, 3};
+    AC_PID_Basic pid_vel_pitch{3, 0.2, 0, 0, 0.2, 3, 3};
+    AC_PID_Basic pid_vel_roll{3, 0.2, 0, 0, 0.2, 3, 3};
     AC_PID_Basic pid_vel_yaw{3, 0.4, 0, 0, 0.2, 3, 3};
 
-    AC_PID_2D pid_pos_xy{1, 0.05, 0, 0, 0.1, 3, 3};
-    AC_PID_Basic pid_pos_z{0.7, 0, 0, 0, 0, 3, 3};
-    AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3}; //p, i, d, ff, imax, filt_t, filt_e, filt_d, dt, opt srmax, opt srtau
+    AC_PID_Basic pid_pos_x{1, 0.05, 0, 0, 0.1, 3, 3};
+    AC_PID_Basic pid_pos_pitch{1, 0.05, 0, 0, 0.1, 3, 3};
+    AC_PID_Basic pid_pos_roll{1, 0.05, 0, 0, 0.1, 3, 3};
+    AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3};
 
     // System Timers
     // --------------
@@ -368,8 +371,8 @@ private:
 
 
     void Log_Write_Vehicle_Startup_Messages();
-    void Write_FINI(float right, float front, float down, float yaw);
-    void Write_FINO(float *amp, float *off);
+    void Write_MOTORI(float yaw, float pitch, float roll, float x);
+    void Write_MOTORO(float *outputs);
 #endif
 
     // mode.cpp
@@ -436,6 +439,7 @@ private:
     ModeVelocity mode_velocity;
     ModeLoiter mode_loiter;
     ModeRTL mode_rtl;
+    ModeAuto mode_auto;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

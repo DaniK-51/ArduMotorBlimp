@@ -18,6 +18,7 @@ public:
         VELOCITY =      2,  // velocity mode
         LOITER =        3,  // loiter mode (position hold)
         RTL =           4,  // rtl
+        AUTO =          5,  // auto (waypoint following)
     };
 
     // constructor
@@ -328,4 +329,65 @@ protected:
     {
         return "RTL";
     }
+};
+
+class ModeAuto : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual bool init(bool ignore_checks) override;
+    virtual void run() override;
+
+    bool requires_GPS() const override
+    {
+        return true;
+    }
+    bool has_manual_throttle() const override
+    {
+        return false;
+    }
+    bool allows_arming(bool from_gcs) const override
+    {
+        return true;
+    };
+    bool is_autopilot() const override
+    {
+        return true;
+    }
+
+    // Waypoint management
+    void set_target(const Location& loc, float yaw);
+    bool has_target() const;
+    Location get_target() const;
+    void advance_to_next();
+    bool mission_complete() const;
+    void clear_mission();
+
+protected:
+
+    const char *name() const override
+    {
+        return "AUTO";
+    }
+    const char *name4() const override
+    {
+        return "AUTO";
+    }
+
+private:
+    static const uint8_t MAX_WAYPOINTS = 20;
+
+    struct MissionItem {
+        Location loc;
+        float yaw;
+        bool valid;
+    };
+
+    MissionItem waypoints[MAX_WAYPOINTS];
+    uint8_t current_wp = 0;
+    uint8_t num_waypoints = 0;
+    float _target_yaw = 0;
 };

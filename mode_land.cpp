@@ -7,10 +7,10 @@
 void ModeLand::run()
 {
     //Stop moving
-    motors->right_out = 0;
-    motors->front_out = 0;
     motors->yaw_out = 0;
-    motors->down_out = 0;
+    motors->pitch_out = 0;
+    motors->roll_out = 0;
+    motors->x_out = 0;
 }
 
 // set_mode_land_failsafe - sets mode to LAND

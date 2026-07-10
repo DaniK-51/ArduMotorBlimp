@@ -5,56 +5,48 @@
 // Code to Write and Read packets from AP_Logger log memory
 // Code to interact with the user to dump or erase logs
 
-struct PACKED log_FINI {
+struct PACKED log_MOTORI {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float Right;
-    float Front;
-    float Down;
     float Yaw;
+    float Pitch;
+    float Roll;
+    float X;
 };
 
-struct PACKED log_FINO {
+struct PACKED log_MOTORO {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    float Fin1_Amp;
-    float Fin1_Off;
-    float Fin2_Amp;
-    float Fin2_Off;
-    float Fin3_Amp;
-    float Fin3_Off;
-    float Fin4_Amp;
-    float Fin4_Off;
+    float M1;
+    float M2;
+    float M3;
+    float M4;
 };
 
-//Write a fin input packet
-void Blimp::Write_FINI(float right, float front, float down, float yaw)
+//Write a motor input packet
+void Blimp::Write_MOTORI(float yaw, float pitch, float roll, float x)
 {
-    const struct log_FINI pkt {
-        LOG_PACKET_HEADER_INIT(LOG_FINI_MSG),
+    const struct log_MOTORI pkt {
+        LOG_PACKET_HEADER_INIT(LOG_MOTORI_MSG),
         time_us       : AP_HAL::micros64(),
-        Right         : right,
-        Front         : front,
-        Down          : down,
-        Yaw           : yaw
+        Yaw           : yaw,
+        Pitch         : pitch,
+        Roll          : roll,
+        X             : x
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-//Write a fin output packet
-void Blimp::Write_FINO(float *amp, float *off)
+//Write a motor output packet
+void Blimp::Write_MOTORO(float *outputs)
 {
-    const struct log_FINO pkt {
-        LOG_PACKET_HEADER_INIT(LOG_FINO_MSG),
+    const struct log_MOTORO pkt {
+        LOG_PACKET_HEADER_INIT(LOG_MOTORO_MSG),
         time_us       : AP_HAL::micros64(),
-        Fin1_Amp      : amp[0],
-        Fin1_Off      : off[0],
-        Fin2_Amp      : amp[1],
-        Fin2_Off      : off[1],
-        Fin3_Amp      : amp[2],
-        Fin3_Off      : off[2],
-        Fin4_Amp      : amp[3],
-        Fin4_Off      : off[3],
+        M1            : outputs[0],
+        M2            : outputs[1],
+        M3            : outputs[2],
+        M4            : outputs[3],
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -79,13 +71,13 @@ struct PACKED log_Control_Tuning {
 // Write PID packets
 void Blimp::Log_Write_PIDs()
 {
-    logger.Write_PID(LOG_PIVN_MSG, pid_vel_xy.get_pid_info_x());
-    logger.Write_PID(LOG_PIVE_MSG, pid_vel_xy.get_pid_info_y());
-    logger.Write_PID(LOG_PIVD_MSG, pid_vel_z.get_pid_info());
+    logger.Write_PID(LOG_PIVN_MSG, pid_vel_x.get_pid_info());
+    logger.Write_PID(LOG_PIVE_MSG, pid_vel_pitch.get_pid_info());
+    logger.Write_PID(LOG_PIVD_MSG, pid_vel_roll.get_pid_info());
     logger.Write_PID(LOG_PIVY_MSG, pid_vel_yaw.get_pid_info());
-    logger.Write_PID(LOG_PIDN_MSG, pid_pos_xy.get_pid_info_x());
-    logger.Write_PID(LOG_PIDE_MSG, pid_pos_xy.get_pid_info_y());
-    logger.Write_PID(LOG_PIDD_MSG, pid_pos_z.get_pid_info());
+    logger.Write_PID(LOG_PIDN_MSG, pid_pos_x.get_pid_info());
+    logger.Write_PID(LOG_PIDE_MSG, pid_pos_pitch.get_pid_info());
+    logger.Write_PID(LOG_PIDD_MSG, pid_pos_roll.get_pid_info());
     logger.Write_PID(LOG_PIDY_MSG, pid_pos_yaw.get_pid_info());
 }
 
@@ -240,34 +232,30 @@ tuning_max     : tune_max
 const struct LogStructure Blimp::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 
-    // @LoggerMessage: FINI
-    // @Description: Fin input
+    // @LoggerMessage: MOTORI
+    // @Description: Motor input
     // @Field: TimeUS: Time since system startup
-    // @Field: R: Right
-    // @Field: F: Front
-    // @Field: D: Down
     // @Field: Y: Yaw
+    // @Field: P: Pitch
+    // @Field: R: Roll
+    // @Field: X: X (forward/backward)
 
     {
-        LOG_FINI_MSG, sizeof(log_FINI),
-        "FINI",  "Qffff",     "TimeUS,R,F,D,Y", "s----", "F----"
+        LOG_MOTORI_MSG, sizeof(log_MOTORI),
+        "MOTORI",  "Qffff",     "TimeUS,Y,P,R,X", "s----", "F----"
     },
 
-    // @LoggerMessage: FINO
-    // @Description: Fin output
+    // @LoggerMessage: MOTORO
+    // @Description: Motor output
     // @Field: TimeUS: Time since system startup
-    // @Field: F1A: Fin 1 Amplitude
-    // @Field: F1O: Fin 1 Offset
-    // @Field: F2A: Fin 2 Amplitude
-    // @Field: F2O: Fin 2 Offset
-    // @Field: F3A: Fin 3 Amplitude
-    // @Field: F3O: Fin 3 Offset
-    // @Field: F4A: Fin 4 Amplitude
-    // @Field: F4O: Fin 4 Offset
+    // @Field: M1: Motor 1 output
+    // @Field: M2: Motor 2 output
+    // @Field: M3: Motor 3 output
+    // @Field: M4: Motor 4 output
 
     {
-        LOG_FINO_MSG, sizeof(log_FINO),
-        "FINO",  "Qffffffff",     "TimeUS,F1A,F1O,F2A,F2O,F3A,F3O,F4A,F4O", "s--------", "F--------"
+        LOG_MOTORO_MSG, sizeof(log_MOTORO),
+        "MOTORO",  "Qffff",     "TimeUS,M1,M2,M3,M4", "s----", "F----"
     },
 
     // @LoggerMessage: PIDD,PIVN,PIVE,PIVD,PIVY
@@ -304,6 +292,14 @@ const struct LogStructure Blimp::log_structure[] = {
     {
         LOG_PIVY_MSG, sizeof(log_PID),
         "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIDN_MSG, sizeof(log_PID),
+        "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
+    },
+    {
+        LOG_PIDE_MSG, sizeof(log_PID),
+        "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
     },
 
     // @LoggerMessage: PTUN

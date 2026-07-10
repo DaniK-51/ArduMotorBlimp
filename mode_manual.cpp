@@ -9,8 +9,14 @@ void ModeManual::run()
     Vector3f pilot;
     float pilot_yaw;
     get_pilot_input(pilot, pilot_yaw);
-    motors->right_out = pilot.y;
-    motors->front_out = pilot.x;
+
+    // Map RC channels to new axes:
+    // Roll stick -> roll_out
+    // Pitch stick -> pitch_out
+    // Throttle stick -> x_out (forward/backward)
+    // Yaw stick -> yaw_out
+    motors->roll_out = pilot.y;
+    motors->pitch_out = pilot.z;
+    motors->x_out = pilot.x;
     motors->yaw_out = pilot_yaw;
-    motors->down_out = pilot.z;
 }

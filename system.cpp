@@ -79,18 +79,13 @@ void Blimp::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    // setup fin output
-    motors->setup_fins();
+    // setup motor output
+    motors->setup_motors();
 
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {
         enable_motor_output();
     }
-
-    //Initialise fin filters
-    vel_xy_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f);
-    vel_z_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 1.0f, 15.0f);
-    vel_yaw_filter.init(scheduler.get_loop_rate_hz(),motors->freq_hz, 5.0f, 15.0f);
 
     // attempt to switch to MANUAL, if this fails then switch to Land
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
@@ -231,7 +226,7 @@ MAV_TYPE Blimp::get_frame_mav_type()
 // return string corresponding to frame_class
 const char* Blimp::get_frame_string()
 {
-    return "AIRFISH";  //TODO: Change to be able to change with different frame_classes
+    return "MIXED";
 }
 
 /*
@@ -239,16 +234,16 @@ const char* Blimp::get_frame_string()
  */
 void Blimp::allocate_motors(void)
 {
-    switch ((Fins::motor_frame_class)g2.frame_class.get()) {
-    case Fins::MOTOR_FRAME_AIRFISH:
+    switch ((MotorMix::motor_frame_class)g2.frame_class.get()) {
+    case MotorMix::MOTOR_FRAME_MIXED:
     default:
-        motors = NEW_NOTHROW Fins(blimp.scheduler.get_loop_rate_hz());
+        motors = NEW_NOTHROW MotorMix(blimp.scheduler.get_loop_rate_hz());
         break;
     }
     if (motors == nullptr) {
         AP_BoardConfig::allocation_error("FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
-    AP_Param::load_object_from_eeprom(motors, Fins::var_info);
+    AP_Param::load_object_from_eeprom(motors, MotorMix::var_info);
 
     // reload lines from the defaults file that may now be accessible
     AP_Param::reload_defaults_file(true);
