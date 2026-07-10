@@ -26,9 +26,9 @@ bool Blimp::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
     case MAV_CMD_NAV_LAND:
-        return false; // land doesn't verify
+        return verify_land();
     case MAV_CMD_NAV_TAKEOFF:
-        return false; // takeoff doesn't verify
+        return verify_takeoff();
     default:
         return true;
     }
@@ -100,9 +100,24 @@ void Blimp::do_land(const AP_Mission::Mission_Command& cmd)
     set_mode(Mode::Number::LAND, ModeReason::MISSION_COMMAND);
 }
 
+// Verify land complete
+bool Blimp::verify_land()
+{
+    // Land is complete when motors are disarmed or land_complete flag is set
+    return ap.land_complete || !motors->armed();
+}
+
 // NAV_TAKEOFF command
 void Blimp::do_takeoff(const AP_Mission::Mission_Command& cmd)
 {
     // For blimp, takeoff just means arm and start mission
     // The actual altitude target is handled by the mission
+}
+
+// Verify takeoff complete
+bool Blimp::verify_takeoff()
+{
+    // Takeoff is complete immediately for blimp (no real takeoff phase)
+    // The blimp is buoyant and doesn't need to climb
+    return true;
 }

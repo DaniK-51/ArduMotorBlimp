@@ -328,7 +328,9 @@ private:
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     void do_land(const AP_Mission::Mission_Command& cmd);
+    bool verify_land();
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
+    bool verify_takeoff();
 
     // ekf_check.cpp
     void ekf_check();
