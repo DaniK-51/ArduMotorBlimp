@@ -67,6 +67,7 @@
 #include "AP_Arming.h"
 
 #include <AP_Mount/AP_Mount.h>
+#include <AP_Mission/AP_Mission.h>
 
 // Local modules
 
@@ -193,6 +194,11 @@ private:
     MotorMix *motors;
     Loiter *loiter;
 
+    // Mission
+    AP_Mission mission{ FUNCTOR_BIND_MEMBER(&Blimp::start_command, bool, const AP_Mission::Mission_Command&),
+                        FUNCTOR_BIND_MEMBER(&Blimp::verify_command, bool, const AP_Mission::Mission_Command&),
+                        FUNCTOR_BIND_MEMBER(&Blimp::mission_complete, void) };
+
     int32_t _home_bearing;
     uint32_t _home_distance;
 
@@ -314,6 +320,15 @@ private:
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
+
+    // mission.cpp
+    bool start_command(const AP_Mission::Mission_Command& cmd);
+    bool verify_command(const AP_Mission::Mission_Command& cmd);
+    void mission_complete();
+    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    void do_land(const AP_Mission::Mission_Command& cmd);
+    void do_takeoff(const AP_Mission::Mission_Command& cmd);
 
     // ekf_check.cpp
     void ekf_check();

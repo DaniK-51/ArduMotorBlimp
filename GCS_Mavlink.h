@@ -30,7 +30,6 @@ protected:
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_mission_item_int(const mavlink_command_int_t &packet);
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
     bool mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const override;

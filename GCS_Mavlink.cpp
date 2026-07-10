@@ -481,36 +481,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_mission_item_int(const mavlink_command_int_t &packet)
-{
-    // Convert MAVLink frame to Location
-    Location loc;
-    loc.lat = packet.x;  // latitude * 1e7
-    loc.lng = packet.y;  // longitude * 1e7
-    loc.alt = packet.z * 100;  // meters to cm
-
-    // Determine frame
-    if (packet.frame == MAV_FRAME_GLOBAL_RELATIVE_ALT) {
-        loc.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
-    } else if (packet.frame == MAV_FRAME_GLOBAL) {
-        loc.frame = MAV_FRAME_GLOBAL;
-    } else {
-        loc.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
-    }
-
-    // Store waypoint in auto mode
-    if (blimp.control_mode == Mode::Number::AUTO) {
-        uint8_t index = packet.param1;
-        float yaw = packet.param4;
-
-        // Clear and set waypoint at index
-        blimp.mode_auto.clear_mission();
-        blimp.mode_auto.set_target(loc, yaw);
-    }
-
-    return MAV_RESULT_ACCEPTED;
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -518,8 +488,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_in
         return handle_command_int_do_reposition(packet);
     case MAV_CMD_NAV_TAKEOFF:
         return MAV_RESULT_ACCEPTED;
-    case MAV_CMD_MISSION_ITEM_INT:
-        return handle_mission_item_int(packet);
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }

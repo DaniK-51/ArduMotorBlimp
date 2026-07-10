@@ -82,6 +82,9 @@ void Blimp::init_ardupilot()
     // setup motor output
     motors->setup_motors();
 
+    // initialise mission library
+    mission.init();
+
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {
         enable_motor_output();

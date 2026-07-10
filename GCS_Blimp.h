@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/MissionItemProtocol_Waypoints.h>
 #include "GCS_Mavlink.h"
 
 class GCS_Blimp : public GCS
@@ -13,7 +14,7 @@ public:
     // pointer to an object of the correct subclass for the link at
     // offset ofs.  These are of the form:
     // GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override;
-    // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
+    // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) const override;
     GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Blimp);
 
     void update_vehicle_sensor_status_flags(void) override;
@@ -26,6 +27,9 @@ public:
     bool vehicle_initialised() const override;
 
     uint8_t sysid_this_mav() const override;
+
+    // Mission protocol support
+    void init() override;
 
 protected:
 
@@ -44,4 +48,6 @@ protected:
         return NEW_NOTHROW GCS_MAVLINK_Blimp(params, uart);
     }
 
+private:
+    MissionItemProtocol_Waypoints* _mission_item_protocol;
 };

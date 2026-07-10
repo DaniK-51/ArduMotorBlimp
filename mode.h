@@ -358,13 +358,10 @@ public:
         return true;
     }
 
-    // Waypoint management
-    void set_target(const Location& loc, float yaw);
+    // Set waypoint target
+    void set_wp_target(const Location& loc);
     bool has_target() const;
-    Location get_target() const;
-    void advance_to_next();
-    bool mission_complete() const;
-    void clear_mission();
+    void clear_target();
 
 protected:
 
@@ -378,16 +375,7 @@ protected:
     }
 
 private:
-    static const uint8_t MAX_WAYPOINTS = 20;
-
-    struct MissionItem {
-        Location loc;
-        float yaw;
-        bool valid;
-    };
-
-    MissionItem waypoints[MAX_WAYPOINTS];
-    uint8_t current_wp = 0;
-    uint8_t num_waypoints = 0;
+    Location _target_loc;
+    bool _has_target = false;
     float _target_yaw = 0;
 };
