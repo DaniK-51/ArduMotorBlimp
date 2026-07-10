@@ -91,8 +91,6 @@ ArduMotorBlimp/
 │   ├── mode.h                     # Modes header
 │   ├── mode_manual.cpp            # Manual control
 │   ├── mode_loiter.cpp            # Position hold
-│   ├── mode_hold.cpp              # Hold mode
-│   ├── mode_auto.cpp              # Automatic mode
 │   ├── mode_land.cpp              # Landing
 │   ├── mode_rtl.cpp               # Return-To-Launch
 │   ├── mode_velocity.cpp          # Velocity control
@@ -114,34 +112,41 @@ ArduMotorBlimp/
 ├── Telemetry and Communication
 │   ├── GCS_Blimp.cpp              # Ground Control Station
 │   ├── GCS_Blimp.h
-│   ├── GCS_MAVLink_Blimp.cpp      # MAVLink processing
-│   ├── GCS_MAVLink_Blimp.h
+│   ├── GCS_Mavlink.cpp            # MAVLink processing
+│   ├── GCS_Mavlink.h
 │   ── Log.cpp                    # Data logging
 │
 ├── Safety
-│   ├── AP_Arming_Blimp.cpp        # Arming checks
-│   ├── AP_Arming_Blimp.h
+│   ├── AP_Arming.cpp              # Arming checks
+│   ├── AP_Arming.h
 │   ├── failsafe.cpp               # Failsafe logic
 │   ├── events.cpp                 # Event handling
 │   └── system.cpp                 # System functions
 │
 ├── System State
-│   ├── AP_State.cpp               # Vehicle state
-│   └── AP_State.h
+│   └── AP_State.cpp               # Vehicle state
 │
-└── RC Channels
-    ├── RC_Channel_Blimp.cpp       # RC channels processing
-    └── RC_Channel_Blimp.h
+├── RC Channels
+│   ├── RC_Channel.cpp             # RC channels processing
+│   └── RC_Channel.h
+│
+└── Documentation
+    ├── README.md                  # Project description
+    ├── COPYING.txt                # License (GPL-3.0)
+    ├── AGENTS.md                  # AI contribution guidelines
+    ├── STRUCTURE.md               # This document (English)
+    └── STRUCTURE.ru.md            # This document (Russian)
 ```
 
 ### File Statistics
 
 | Category | Number of Files |
 |----------|-----------------|
-| **Main (.cpp)** | 18 files |
-| **Headers (.h)** | 13 files |
-| **Configuration** | 3 files |
-| **Total** | 42 files |
+| **Main (.cpp)** | 25 files |
+| **Headers (.h)** | 12 files |
+| **Configuration** | 1 file |
+| **Documentation** | 5 files |
+| **Total** | 43 files |
 
 ---
 
@@ -154,7 +159,7 @@ ArduMotorBlimp/
 **Main Functions:**
 ```cpp
 // Main blimp class
-class Blimp : public AP_HAL::HAL::Callbacks {
+class Blimp : public AP_Vehicle {
 public:
     // System initialization
     void init() override;
@@ -227,8 +232,6 @@ const AP_Param::GroupInfo Parameters::var_info[] = {
 Mode (base class)
    ├── ModeManual        -> Manual control
    ├── ModeLoiter        -> Position hold
-   ├── ModeHold          -> Point hold
-   ├── ModeAuto          -> Automatic mission
    ├── ModeLand          -> Landing
    ├── ModeRTL           -> Return to launch
    └── ModeVelocity      -> Velocity control
@@ -291,7 +294,7 @@ motors->output();
 - Course stabilization
 - Wind compensation
 
-### 6. GCS_Blimp.cpp / GCS_MAVLink_Blimp.cpp
+### 6. GCS_Blimp.cpp / GCS_Mavlink.cpp
 
 **Purpose:** Ground Control Station communication
 
@@ -325,28 +328,25 @@ The project uses **Waf** — a Python-based build system, standard for ArduPilot
 
 ```python
 def build(bld):
-    # Vehicle name
     vehicle = bld.path.name
-    
-    # Create static library
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
-            'AC_InputManager',        # Input management
-            'AP_Avoidance',           # Obstacle avoidance
-            'AP_LTM_Telem',          # LTM telemetry
-            'AP_Devo_Telem',         # Devo telemetry
-            'AP_KDECAN',             # KDECAN support
-            'AP_AdvancedFailsafe',   # Advanced failsafe
-            'AC_AttitudeControl',    # Attitude control
+            'AC_InputManager',
+            'AP_InertialNav',
+            'AP_Avoidance',
+            'AP_LTM_Telem',
+            'AP_Devo_Telem',
+            'AP_KDECAN',
+            'AP_AdvancedFailsafe',
+            'AC_AttitudeControl',
         ],
     )
-    
-    # Create executable
+
     bld.ap_program(
-        program_name='blimp',
-        program_groups=['bin', 'blimp'],
+        program_name='ardublimp',
+        program_groups=['bin', 'ardumotorblimp'],
         use=vehicle + '_libs',
     )
 ```
@@ -368,7 +368,7 @@ cd ArduMotorBlimp
 ./waf blimp
 
 # 5. Result
-./build/sitl/bin/blimp
+./build/sitl/bin/ardublimp
 ```
 
 ### Dependencies
@@ -423,29 +423,7 @@ cd ArduMotorBlimp
 5. Send commands to motors
 ```
 
-### 3. Hold
-
-**File:** `mode_hold.cpp`
-
-**Description:** Current position and altitude hold
-
-**Difference from Loiter:**
-- Stricter hold
-- Smaller allowed error
-- Uses barometer for altitude
-
-### 4. Auto (Automatic)
-
-**File:** `mode_auto.cpp`
-
-**Description:** Execute pre-defined mission
-
-**Capabilities:**
-- Follow waypoints
-- Execute commands (takeoff, land, delay)
-- Automatic return on connection loss
-
-### 5. Land
+### 3. Land
 
 **File:** `mode_land.cpp`
 
@@ -459,7 +437,7 @@ cd ArduMotorBlimp
 4. Disable motors after landing
 ```
 
-### 6. RTL (Return-To-Launch)
+### 4. RTL (Return-To-Launch)
 
 **File:** `mode_rtl.cpp`
 
@@ -472,7 +450,7 @@ cd ArduMotorBlimp
 3. Descend and land
 ```
 
-### 7. Velocity (Velocity Control)
+### 5. Velocity (Velocity Control)
 
 **File:** `mode_velocity.cpp`
 
@@ -497,7 +475,7 @@ cd ArduMotorBlimp
                          |
                          v
 +---------------------------------------------------------+
-|  RC_Channel_Blimp                                       |
+|  RC_Channel                                             |
 |  - Read RC channels                                     |
 |  - Signal filtering                                     |
 |  - Failsafe check                                       |
@@ -663,12 +641,12 @@ logger.Write("ATT", "roll,pitch,yaw,roll_d,pitch_d",
 
 ## Safety
 
-### AP_Arming_Blimp
+### AP_Arming
 
 **Pre-arming Checks:**
 
 ```cpp
-bool AP_Arming_Blimp::pre_arm_checks() {
+bool AP_Arming::pre_arm_checks() {
     bool success = true;
     
     // 1. GPS check
@@ -899,10 +877,10 @@ git push origin main
 ./waf blimp
 
 # Run
-./build/sitl/bin/blimp --model +
+./build/sitl/bin/ardublimp --model +
 
 # With custom parameters
-./build/sitl/bin/blimp --model + --add-param-file=blimp.parm
+./build/sitl/bin/ardublimp --model + --add-param-file=blimp.parm
 ```
 
 ### Debugging

@@ -13,14 +13,19 @@ public:
 
 protected:
 
+    uint32_t telem_delay() const override;
+
     MAV_RESULT handle_flight_termination(const mavlink_command_int_t &packet) override;
+
+    uint8_t sysid_my_gcs() const override;
+    bool sysid_enforce() const override;
 
     bool params_ready() const override;
     void send_banner() override;
 
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 
-    bool get_target_location(Location &loc) const override;
+    void send_position_target_global_int() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
@@ -43,10 +48,6 @@ protected:
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
 #endif
 
-    // Send the mode with the given index (not mode number!) return the total number of modes
-    // Index starts at 1
-    uint8_t send_available_mode(uint8_t index) const override;
-
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
@@ -55,7 +56,7 @@ private:
     void packetReceived(const mavlink_status_t &status,
                         const mavlink_message_t &msg) override;
 
-    uint8_t base_mode() const override;
+    MAV_MODE base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
 
     float vfr_hud_airspeed() const override;
@@ -66,8 +67,7 @@ private:
 
     void send_wind() const;
 
-    // Internal bitmask indices for gcs_pid_mask (1-indexed, sequential).
-    // These do not correspond to MAVLink PID_TUNING_AXIS values.
+    //This is 1-indexed, unlike most enums for consistency with the mavlink PID_TUNING enums.
     enum PID_SEND : uint8_t {
         VELX =        1,
         VELY =        2,

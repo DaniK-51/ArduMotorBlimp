@@ -38,9 +38,9 @@ ArduMotorBlimp/             # Root — Blimp vehicle code
   mode.cpp / mode.h         # Mode base class and management
   Parameters.cpp / .h       # Vehicle parameter definitions
   GCS_Blimp.cpp / .h        # Ground Control Station interface
-  GCS_MAVLink_Blimp.cpp/.h  # MAVLink message handling
-  RC_Channel_Blimp.cpp / .h # RC channel handling
-  AP_Arming_Blimp.cpp / .h  # Arming checks
+  GCS_Mavlink.cpp / .h      # MAVLink message handling
+  RC_Channel.cpp / .h       # RC channel handling
+  AP_Arming.cpp / .h        # Arming checks
   Fins.cpp / Fins.h         # Motor/fin control
   Loiter.cpp / Loiter.h     # Loiter controller
   motors.cpp                # Motor mixing

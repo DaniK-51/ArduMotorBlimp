@@ -91,13 +91,11 @@ ArduMotorBlimp/
 │   ├── mode.h                     # Заголовок режимов
 │   ├── mode_manual.cpp            # Ручное управление
 │   ├── mode_loiter.cpp            # Удержание позиции
-│   ├── mode_hold.cpp              # Удержание (Hold)
-│   ├── mode_auto.cpp              # Автоматический режим
 │   ├── mode_land.cpp              # Посадка
 │   ├── mode_rtl.cpp               # Return-To-Launch
 │   ├── mode_velocity.cpp          # Контроль скорости
-│   └── Loiter.cpp                 # Логика Loiter
-│       Loiter.h
+│   ├── Loiter.cpp                 # Логика Loiter
+│   └── Loiter.h
 │
 ── Система управления
 │   ├── motors.cpp                 # Управление моторами
@@ -114,34 +112,41 @@ ArduMotorBlimp/
 ├── Телеметрия и связь
 │   ├── GCS_Blimp.cpp              # Ground Control Station
 │   ├── GCS_Blimp.h
-│   ├── GCS_MAVLink_Blimp.cpp      # MAVLink обработка
-│   ├── GCS_MAVLink_Blimp.h
+│   ├── GCS_Mavlink.cpp            # MAVLink обработка
+│   ├── GCS_Mavlink.h
 │   └── Log.cpp                    # Логирование данных
 │
 ├── Безопасность
-│   ├── AP_Arming_Blimp.cpp        # Проверки арминга
-│   ├── AP_Arming_Blimp.h
+│   ├── AP_Arming.cpp              # Проверки арминга
+│   ├── AP_Arming.h
 │   ├── failsafe.cpp               # Failsafe логика
 │   ├── events.cpp                 # Обработка событий
 │   ── system.cpp                 # Системные функции
 │
 ├── Состояние системы
-│   ├── AP_State.cpp               # Состояние аппарата
-│   └── AP_State.h
+│   └── AP_State.cpp               # Состояние аппарата
 │
-└── RC каналы
-    ├── RC_Channel_Blimp.cpp       # Обработка RC каналов
-    └── RC_Channel_Blimp.h
+├── RC каналы
+│   ├── RC_Channel.cpp             # Обработка RC каналов
+│   └── RC_Channel.h
+│
+└── Документация
+    ├── README.md                  # Описание проекта
+    ├── COPYING.txt                # Лицензия (GPL-3.0)
+    ├── AGENTS.md                  # Руководство для AI
+    ├── STRUCTURE.md               # Этот документ (англ.)
+    └── STRUCTURE.ru.md            # Этот документ (рус.)
 ```
 
 ### Статистика файлов
 
 | Категория | Количество файлов |
 |-----------|-------------------|
-| **Основные (.cpp)** | 18 файлов |
-| **Заголовки (.h)** | 13 файлов |
-| **Конфигурация** | 3 файла |
-| **Всего** | 42 файла |
+| **Основные (.cpp)** | 25 файлов |
+| **Заголовки (.h)** | 12 файлов |
+| **Конфигурация** | 1 файл |
+| **Документация** | 5 файлов |
+| **Всего** | 43 файла |
 
 ---
 
@@ -154,7 +159,7 @@ ArduMotorBlimp/
 **Основные функции:**
 ```cpp
 // Главный класс дирижабля
-class Blimp : public AP_HAL::HAL::Callbacks {
+class Blimp : public AP_Vehicle {
 public:
     // Инициализация системы
     void init() override;
@@ -227,8 +232,6 @@ const AP_Param::GroupInfo Parameters::var_info[] = {
 Mode (базовый класс)
    ├── ModeManual        → Ручное управление
    ├── ModeLoiter        → Удержание позиции
-   ├── ModeHold          → Удержание точки
-   ├── ModeAuto          → Автоматическая миссия
    ├── ModeLand          → Посадка
    ├── ModeRTL           → Возврат домой
    └── ModeVelocity      → Контроль скорости
@@ -291,7 +294,7 @@ motors->output();
 - Стабилизация курса
 - Компенсация ветра
 
-### 6. GCS_Blimp.cpp / GCS_MAVLink_Blimp.cpp
+### 6. GCS_Blimp.cpp / GCS_Mavlink.cpp
 
 **Назначение:** Связь с наземной станцией (Ground Control Station)
 
@@ -334,6 +337,7 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_InputManager',        # Управление входами
+            'AP_InertialNav',         # Инерциальная навигация
             'AP_Avoidance',           # Избегание препятствий
             'AP_LTM_Telem',          # LTM телеметрия
             'AP_Devo_Telem',         # Devo телеметрия
@@ -345,8 +349,8 @@ def build(bld):
     
     # Создание исполняемого файла
     bld.ap_program(
-        program_name='blimp',
-        program_groups=['bin', 'blimp'],
+        program_name='ardublimp',
+        program_groups=['bin', 'ardumotorblimp'],
         use=vehicle + '_libs',
     )
 ```
@@ -368,7 +372,7 @@ cd ArduMotorBlimp
 ./waf blimp
 
 # 5. Результат
-./build/sitl/bin/blimp
+./build/sitl/bin/ardublimp
 ```
 
 ### Зависимости
@@ -423,29 +427,7 @@ cd ArduMotorBlimp
 5. Отправка команд моторам
 ```
 
-### 3. Hold (Удержание)
-
-**Файл:** `mode_hold.cpp`
-
-**Описание:** Удержание текущей позиции и высоты
-
-**Отличие от Loiter:**
-- Более строгое удержание
-- Меньше допустимая ошибка
-- Использует барометр для высоты
-
-### 4. Auto (Автоматический)
-
-**Файл:** `mode_auto.cpp`
-
-**Описание:** Выполнение заранее заданной миссии
-
-**Возможности:**
-- Следование по точкам (waypoints)
-- Выполнение команд (взлет, посадка, задержка)
-- Автоматический возврат при потере связи
-
-### 5. Land (Посадка)
+### 3. Land (Посадка)
 
 **Файл:** `mode_land.cpp`
 
@@ -459,7 +441,7 @@ cd ArduMotorBlimp
 4. Отключение моторов после посадки
 ```
 
-### 6. RTL (Return-To-Launch)
+### 4. RTL (Return-To-Launch)
 
 **Файл:** `mode_rtl.cpp`
 
@@ -472,7 +454,7 @@ cd ArduMotorBlimp
 3. Снижение и посадка
 ```
 
-### 7. Velocity (Контроль скорости)
+### 5. Velocity (Контроль скорости)
 
 **Файл:** `mode_velocity.cpp`
 
@@ -496,7 +478,7 @@ cd ArduMotorBlimp
 └──────────────────┬──────────────────────────────────────┘
                    ▼
 ─────────────────────────────────────────────────────────┐
-│  RC_Channel_Blimp                                       │
+│  RC_Channel                                                  │
 │  • Чтение RC каналов                                    │
 │  • Фильтрация сигналов                                  │
 │  • Проверка failsafe                                    │
@@ -658,12 +640,12 @@ logger.Write("ATT", "roll,pitch,yaw,roll_d,pitch_d",
 
 ## Безопасность
 
-### AP_Arming_Blimp
+### AP_Arming
 
 **Проверки перед армингом:**
 
 ```cpp
-bool AP_Arming_Blimp::pre_arm_checks() {
+bool AP_Arming::pre_arm_checks() {
     bool success = true;
     
     // 1. Проверка GPS
@@ -894,10 +876,10 @@ git push origin main
 ./waf blimp
 
 # Запуск
-./build/sitl/bin/blimp --model +
+./build/sitl/bin/ardublimp --model +
 
 # С кастомными параметрами
-./build/sitl/bin/blimp --model + --add-param-file=blimp.parm
+./build/sitl/bin/ardublimp --model + --add-param-file=blimp.parm
 ```
 
 ### Отладка

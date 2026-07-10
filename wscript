@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# encoding: utf-8
 
 def build(bld):
     vehicle = bld.path.name
@@ -7,6 +8,7 @@ def build(bld):
         ap_vehicle=vehicle,
         ap_libraries=bld.ap_common_vehicle_libraries() + [
             'AC_InputManager',
+            'AP_InertialNav',
             'AP_Avoidance',
             'AP_LTM_Telem',
             'AP_Devo_Telem',
@@ -17,7 +19,7 @@ def build(bld):
     )
 
     bld.ap_program(
-        program_name='blimp',
-        program_groups=['bin', 'blimp'],
+        program_name='ardublimp',
+        program_groups=['bin', 'ardumotorblimp'],
         use=vehicle + '_libs',
         )

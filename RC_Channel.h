@@ -12,7 +12,7 @@ public:
 protected:
 
     void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
-    bool do_aux_function(const AuxFuncTrigger &trigger) override;
+    bool do_aux_function(AUX_FUNC ch_option, AuxSwitchPos) override;
 
 private:
 
@@ -37,14 +37,7 @@ public:
     RC_Channel_Blimp obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Blimp *channel(const uint8_t chan) override
     {
-        if (chan >= ARRAY_SIZE(obj_channels)) {
-            return nullptr;
-        }
-        return &obj_channels[chan];
-    }
-    const RC_Channel_Blimp *channel(const uint8_t chan) const override
-    {
-        if (chan >= ARRAY_SIZE(obj_channels)) {
+        if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
         }
         return &obj_channels[chan];
