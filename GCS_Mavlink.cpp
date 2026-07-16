@@ -456,36 +456,9 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_command_int_t &packet)
-{
-    const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
-    if (!blimp.flightmode->in_guided_mode() && !change_modes) {
-        return MAV_RESULT_DENIED;
-    }
-
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
-
-    Location request_location {};
-    if (!location_from_command_t(packet, request_location)) {
-        return MAV_RESULT_DENIED;
-    }
-
-    if (request_location.sanitize(blimp.current_loc)) {
-        // if the location wasn't already sane don't load it
-        return MAV_RESULT_DENIED; // failed as the location is not valid
-    }
-
-    return MAV_RESULT_ACCEPTED;
-}
-
 MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
-    case MAV_CMD_DO_REPOSITION:
-        return handle_command_int_do_reposition(packet);
     case MAV_CMD_NAV_TAKEOFF:
         return MAV_RESULT_ACCEPTED;
     default:

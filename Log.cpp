@@ -68,19 +68,6 @@ struct PACKED log_Control_Tuning {
     int16_t  climb_rate;
 };
 
-// Write PID packets
-void Blimp::Log_Write_PIDs()
-{
-    logger.Write_PID(LOG_PIVN_MSG, pid_vel_x.get_pid_info());
-    logger.Write_PID(LOG_PIVE_MSG, pid_vel_pitch.get_pid_info());
-    logger.Write_PID(LOG_PIVD_MSG, pid_vel_roll.get_pid_info());
-    logger.Write_PID(LOG_PIVY_MSG, pid_vel_yaw.get_pid_info());
-    logger.Write_PID(LOG_PIDN_MSG, pid_pos_x.get_pid_info());
-    logger.Write_PID(LOG_PIDE_MSG, pid_pos_pitch.get_pid_info());
-    logger.Write_PID(LOG_PIDD_MSG, pid_pos_roll.get_pid_info());
-    logger.Write_PID(LOG_PIDY_MSG, pid_pos_yaw.get_pid_info());
-}
-
 // Write an attitude packet
 void Blimp::Log_Write_Attitude()
 {
@@ -256,50 +243,6 @@ const struct LogStructure Blimp::log_structure[] = {
     {
         LOG_MOTORO_MSG, sizeof(log_MOTORO),
         "MOTORO",  "Qffff",     "TimeUS,M1,M2,M3,M4", "s----", "F----"
-    },
-
-    // @LoggerMessage: PIDD,PIVN,PIVE,PIVD,PIVY
-    // @Description: Proportional/Integral/Derivative gain values
-    // @Field: TimeUS: Time since system startup
-    // @Field: Tar: desired value
-    // @Field: Act: achieved value
-    // @Field: Err: error between target and achieved
-    // @Field: P: proportional part of PID
-    // @Field: I: integral part of PID
-    // @Field: D: derivative part of PID
-    // @Field: FF: controller feed-forward portion of response
-    // @Field: DFF: controller derivative feed-forward portion of response
-    // @Field: Dmod: scaler applied to D gain to reduce limit cycling
-    // @Field: SRate: slew rate
-    // @Field: Flags: bitmask of PID state flags
-    // @FieldBitmaskEnum: Flags: log_PID_Flags
-    {
-        LOG_PIDD_MSG, sizeof(log_PID),
-        "PIDD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIVN_MSG, sizeof(log_PID),
-        "PIVN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIVE_MSG, sizeof(log_PID),
-        "PIVE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIVD_MSG, sizeof(log_PID),
-        "PIVD", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIVY_MSG, sizeof(log_PID),
-        "PIVY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIDN_MSG, sizeof(log_PID),
-        "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
-    },
-    {
-        LOG_PIDE_MSG, sizeof(log_PID),
-        "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS
     },
 
     // @LoggerMessage: PTUN

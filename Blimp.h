@@ -58,16 +58,11 @@
 #include "config.h"
 
 #include "MotorMix.h"
-#include "Loiter.h"
 
 #include "RC_Channel.h"         // RC Channel Library
 
-#include "GCS_Mavlink.h"
 #include "GCS_Blimp.h"
 #include "AP_Arming.h"
-
-#include <AP_Mount/AP_Mount.h>
-#include <AP_Mission/AP_Mission.h>
 
 // Local modules
 
@@ -89,14 +84,8 @@ public:
 
     friend class Mode;
     friend class ModeManual;
-    friend class ModeLand;
-    friend class ModeVelocity;
-    friend class ModeLoiter;
-    friend class ModeRTL;
-    friend class ModeAuto;
 
     friend class MotorMix;
-    friend class Loiter;
 
     Blimp(void);
 
@@ -192,12 +181,6 @@ private:
 
     // Motor Output
     MotorMix *motors;
-    Loiter *loiter;
-
-    // Mission
-    AP_Mission mission{ FUNCTOR_BIND_MEMBER(&Blimp::start_command, bool, const AP_Mission::Mission_Command&),
-                        FUNCTOR_BIND_MEMBER(&Blimp::verify_command, bool, const AP_Mission::Mission_Command&),
-                        FUNCTOR_BIND_MEMBER(&Blimp::mission_complete, void) };
 
     int32_t _home_bearing;
     uint32_t _home_distance;
@@ -224,24 +207,9 @@ private:
 
     Vector3f pos_ned;
     float vel_yaw;
-    float vel_yaw_filtd;
-    NotchFilterVector2f vel_xy_filter;
-    NotchFilterFloat vel_z_filter;
-    NotchFilterFloat vel_yaw_filter;
 
     // Inertial Navigation
     AP_InertialNav inertial_nav;
-
-    // Vel & pos PIDs - new axes: x (linear), pitch (rotational), roll (rotational), yaw (rotational)
-    AC_PID_Basic pid_vel_x{3, 0.2, 0, 0, 0.2, 3, 3};
-    AC_PID_Basic pid_vel_pitch{3, 0.2, 0, 0, 0.2, 3, 3};
-    AC_PID_Basic pid_vel_roll{3, 0.2, 0, 0, 0.2, 3, 3};
-    AC_PID_Basic pid_vel_yaw{3, 0.4, 0, 0, 0.2, 3, 3};
-
-    AC_PID_Basic pid_pos_x{1, 0.05, 0, 0, 0.1, 3, 3};
-    AC_PID_Basic pid_pos_pitch{1, 0.05, 0, 0, 0.1, 3, 3};
-    AC_PID_Basic pid_pos_roll{1, 0.05, 0, 0, 0.1, 3, 3};
-    AC_PID pid_pos_yaw{1.2, 0.5, 0, 0, 2, 3, 3, 3};
 
     // System Timers
     // --------------
@@ -321,17 +289,6 @@ private:
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
-    // mission.cpp
-    bool start_command(const AP_Mission::Mission_Command& cmd);
-    bool verify_command(const AP_Mission::Mission_Command& cmd);
-    void mission_complete();
-    void do_nav_wp(const AP_Mission::Mission_Command& cmd);
-    bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
-    void do_land(const AP_Mission::Mission_Command& cmd);
-    bool verify_land();
-    void do_takeoff(const AP_Mission::Mission_Command& cmd);
-    bool verify_takeoff();
-
     // ekf_check.cpp
     void ekf_check();
     bool ekf_over_threshold();
@@ -404,9 +361,8 @@ private:
 
     // mode_land.cpp
     void set_mode_land_failsafe(ModeReason reason);
-    bool landing_with_GPS();
 
-    // // motors.cpp
+    // motors.cpp
     void arm_motors_check();
     void motors_output();
 
@@ -453,10 +409,6 @@ private:
     Mode *flightmode;
     ModeManual mode_manual;
     ModeLand mode_land;
-    ModeVelocity mode_velocity;
-    ModeLoiter mode_loiter;
-    ModeRTL mode_rtl;
-    ModeAuto mode_auto;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

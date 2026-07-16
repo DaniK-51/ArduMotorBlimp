@@ -249,19 +249,6 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
-    AP_Float        max_vel_x;
-    AP_Float        max_vel_pitch;
-    AP_Float        max_vel_roll;
-    AP_Float        max_vel_yaw;
-    AP_Float        max_pos_x;
-    AP_Float        max_pos_pitch;
-    AP_Float        max_pos_roll;
-    AP_Float        max_pos_yaw;
-
-    AP_Int8         simple_mode;
-    AP_Int16        dis_mask;
-    AP_Float        pid_dz;
-
     AP_Int8         rtl_alt_type;
 
     AP_Int16        rc_speed; // speed of fast RC Channels in Hz

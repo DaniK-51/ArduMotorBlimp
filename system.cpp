@@ -35,7 +35,6 @@ void Blimp::init_ardupilot()
 
     // allocate the motors class
     allocate_motors();
-    loiter = NEW_NOTHROW Loiter(blimp.scheduler.get_loop_rate_hz());
 
     // initialise rc channels including setting mode
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
@@ -81,9 +80,6 @@ void Blimp::init_ardupilot()
 
     // setup motor output
     motors->setup_motors();
-
-    // initialise mission library
-    mission.init();
 
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {

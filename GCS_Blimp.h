@@ -1,7 +1,6 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#include <GCS_MAVLink/MissionItemProtocol_Waypoints.h>
 #include "GCS_Mavlink.h"
 
 class GCS_Blimp : public GCS
@@ -28,9 +27,6 @@ public:
 
     uint8_t sysid_this_mav() const override;
 
-    // Mission protocol support
-    void init() override;
-
 protected:
 
     // minimum amount of time (in microseconds) that must remain in
@@ -48,6 +44,4 @@ protected:
         return NEW_NOTHROW GCS_MAVLINK_Blimp(params, uart);
     }
 
-private:
-    MissionItemProtocol_Waypoints* _mission_item_protocol;
 };

@@ -16,7 +16,6 @@ Mode::Mode(void) :
     inertial_nav(blimp.inertial_nav),
     ahrs(blimp.ahrs),
     motors(blimp.motors),
-    loiter(blimp.loiter),
     channel_right(blimp.channel_right),
     channel_front(blimp.channel_front),
     channel_up(blimp.channel_up),
@@ -34,18 +33,6 @@ Mode *Blimp::mode_from_mode_num(const Mode::Number mode)
         break;
     case Mode::Number::MANUAL:
         ret = &mode_manual;
-        break;
-    case Mode::Number::VELOCITY:
-        ret = &mode_velocity;
-        break;
-    case Mode::Number::LOITER:
-        ret = &mode_loiter;
-        break;
-    case Mode::Number::RTL:
-        ret = &mode_rtl;
-        break;
-    case Mode::Number::AUTO:
-        ret = &mode_auto;
         break;
     default:
         break;
