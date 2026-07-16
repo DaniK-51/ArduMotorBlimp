@@ -266,6 +266,13 @@ motors->x_out = 0;
 - Амплитудно-смещённое управление
 - Жёстко заданную конфигурацию 4 fin'ов
 
+### Остатки Fins (удалены в cleanup):
+- `mode.h`: `Fins *&motors` → `MotorMix *&motors`
+- `Loiter.h`: `friend class Fins` → `friend class MotorMix`
+- `config.h`: `Fins::MOTOR_FRAME_TYPE_AIRFISH` → `MotorMix::MOTOR_FRAME_TYPE_MIXED`
+- `RC_Channel.h`: `#include "Fins.h"` → `#include "MotorMix.h"`
+- `Parameters.h`: переименованы enum values для совместимости
+
 ---
 
 ## Параметры
