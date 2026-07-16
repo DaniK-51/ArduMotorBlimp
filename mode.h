@@ -13,7 +13,7 @@ public:
 
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
-        LAND =          0,
+        BRAKE =         0,
         MANUAL =        1,
     };
 
@@ -142,7 +142,7 @@ protected:
     }
 };
 
-class ModeLand : public Mode
+class ModeBrake : public Mode
 {
 
 public:
@@ -168,10 +168,10 @@ protected:
 
     const char *name() const override
     {
-        return "LAND";
+        return "BRAKE";
     }
     const char *name4() const override
     {
-        return "LAND";
+        return "BRKE";
     }
 };

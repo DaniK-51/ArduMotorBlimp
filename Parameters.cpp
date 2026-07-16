@@ -120,7 +120,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER,4:RTL,5:AUTO
+    // @Values: 0:BRAKE,1:MANUAL
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 

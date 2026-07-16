@@ -72,8 +72,8 @@ enum LoggingParameters {
 #define FS_GCS_ENABLED_ALWAYS_LAND             5
 
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
-#define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
-#define FS_EKF_ACTION_LAND_EVEN_MANUAL      3       // switch to Land mode on EKF failsafe even if in Manual mode
+#define FS_EKF_ACTION_BRAKE                 1       // switch to BRAKE mode on EKF failsafe
+#define FS_EKF_ACTION_BRAKE_EVEN_MANUAL     3       // switch to BRAKE mode on EKF failsafe even if in Manual mode
 
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)

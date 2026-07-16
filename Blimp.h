@@ -84,6 +84,7 @@ public:
 
     friend class Mode;
     friend class ModeManual;
+    friend class ModeBrake;
 
     friend class MotorMix;
 
@@ -359,8 +360,8 @@ private:
     void update_flight_mode();
     void notify_flight_mode();
 
-    // mode_land.cpp
-    void set_mode_land_failsafe(ModeReason reason);
+    // mode_brake.cpp
+    void set_mode_brake_failsafe(ModeReason reason);
 
     // motors.cpp
     void arm_motors_check();
@@ -408,7 +409,7 @@ private:
 
     Mode *flightmode;
     ModeManual mode_manual;
-    ModeLand mode_land;
+    ModeBrake mode_brake;
 
     // mode.cpp
     Mode *mode_from_mode_num(const Mode::Number mode);

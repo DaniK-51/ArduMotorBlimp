@@ -106,7 +106,7 @@ int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
  */
 void GCS_MAVLINK_Blimp::send_pid_tuning()
 {
-    if (blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::LAND) {
+    if (blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::BRAKE) {
         //No PIDs are used in Manual or Land mode.
         return;
     }
