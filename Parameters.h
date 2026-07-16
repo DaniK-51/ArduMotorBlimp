@@ -104,11 +104,13 @@ public:
         k_param_pid_pos_yaw,
 
         //Position & Velocity controller params
-        k_param_max_vel_xy = 50,
-        k_param_max_vel_z,
+        k_param_max_vel_x = 50,
+        k_param_max_vel_pitch,
+        k_param_max_vel_roll,
         k_param_max_vel_yaw,
-        k_param_max_pos_xy,
-        k_param_max_pos_z,
+        k_param_max_pos_x,
+        k_param_max_pos_pitch,
+        k_param_max_pos_roll,
         k_param_max_pos_yaw,
         k_param_simple_mode,
         k_param_dis_mask,

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <RC_Channel/RC_Channel.h>
-#include "Fins.h"
-#include "mode.h" //this includes Blimp.h which includes Fins.h
+#include "MotorMix.h"
+#include "mode.h" //this includes Blimp.h which includes MotorMix.h
 
 class RC_Channel_Blimp : public RC_Channel
 {

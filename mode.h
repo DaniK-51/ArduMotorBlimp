@@ -105,7 +105,7 @@ protected:
     ParametersG2 &g2;
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
-    Fins *&motors;
+    MotorMix *&motors;
     Loiter *&loiter;
     RC_Channel *&channel_right;
     RC_Channel *&channel_front;

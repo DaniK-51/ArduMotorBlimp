@@ -40,7 +40,7 @@ class Loiter
 {
 public:
     friend class Blimp;
-    friend class Fins;
+    friend class MotorMix;
 
     float scaler_xr;
     float scaler_pyaw;
