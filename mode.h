@@ -111,7 +111,6 @@ protected:
     RC_Channel *&channel_front;
     RC_Channel *&channel_up;
     RC_Channel *&channel_yaw;
-    float &G_Dt;
 
 public:
     // pass-through functions to reduce code churn on conversion;

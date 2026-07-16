@@ -20,8 +20,7 @@ Mode::Mode(void) :
     channel_right(blimp.channel_right),
     channel_front(blimp.channel_front),
     channel_up(blimp.channel_up),
-    channel_yaw(blimp.channel_yaw),
-    G_Dt(blimp.G_Dt)
+    channel_yaw(blimp.channel_yaw)
 { };
 
 // return the static controller object corresponding to supplied mode
