@@ -205,9 +205,12 @@ motors.cpp: motors_output()
     ▼
 MotorMix.cpp: output()
     │ [yaw, pitch, roll, x] × matrix → [M1..M4]
+    │ → PWM 1000-2000 (bidirectional)
     ▼
-SRV_Channels → PWM → Motors
+Motors
 ```
+
+No AHRS, EKF, GPS, or other sensors required for Manual mode.
 
 ### Scheduler
 
@@ -230,6 +233,7 @@ SRV_Channels → PWM → Motors
 **Purpose:** Direct pilot control  
 **GPS Required:** No  
 **Stabilization:** None  
+**Sensors Required:** None — only RC input and motor mixing
 
 Stick positions are mapped directly to motor mixing matrix inputs.
 
@@ -243,6 +247,30 @@ All motor outputs set to zero. Used as failsafe target for:
 - Radio signal loss
 - EKF failure
 - GCS connection loss
+
+---
+
+## Arming
+
+Button-based arming via AUX channel:
+
+1. Set an RC channel (5-8) to `AUX_FUNC=31` (ARMDISARM) in Mission Planner
+2. Toggle switch HIGH → arm
+3. Toggle switch LOW → disarm
+
+No rudder arming — purely switch-based.
+
+---
+
+## Motor Output
+
+Bidirectional PWM for each motor:
+
+| PWM | State |
+|-----|-------|
+| 1000 | Full reverse |
+| 1500 | Stop |
+| 2000 | Full forward |
 
 ---
 

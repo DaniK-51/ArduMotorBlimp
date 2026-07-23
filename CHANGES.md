@@ -11,6 +11,11 @@
 
 Минимальная сборка для первого тестового полёта. Содержит только Manual + BRAKE режимы.
 
+**Ключевые особенности:**
+- Manual mode не зависит от датчиков (AHRS, EKF, GPS)
+- Бидирекциональные моторы (PWM 1000-2000)
+- Арминг по кнопке через AUX канал
+
 ---
 
 ## Удалено (ветка manual-only)
@@ -46,18 +51,21 @@
 ### Моторы
 | Файл | Описание |
 |------|----------|
-| `MotorMix.h/cpp` | Матрица смешивания 4×4 |
-| `motors.cpp` | Конвейер вывода, проверка арминга |
+| `MotorMix.h/cpp` | Матрица смешивания 4×4, бидирекциональный PWM |
+| `motors.cpp` | Конвейер вывода |
+
+### Арминг
+| Файл | Описание |
+|------|----------|
+| `RC_Channel.cpp` | AUX_FUNC=31 (ARMDISARM) для арминга по кнопке |
 
 ### Система
 | Файл | Описание |
 |------|----------|
 | `radio.cpp` | Ввод с RC пульта |
-| `system.cpp` | Инициализация |
-| `commands.cpp` | Домашняя позиция |
+| `system.cpp` | Инициализация (без датчиков) |
 | `failsafe.cpp` | Таймер failsafe |
 | `events.cpp` | Обработка событий |
-| `ekf_check.cpp` | Проверка EKF |
 
 ### GCS
 | Файл | Описание |
@@ -67,8 +75,9 @@
 
 ---
 
-## Параметры (MotorMix)
+## Параметры
 
+### MotorMix (MOTOR_*)
 | Параметр | Диапазон | Описание |
 |----------|----------|----------|
 | `M1_YAW` | -1..1 | Motor 1 yaw |
@@ -77,6 +86,11 @@
 | `M1_X` | -1..1 | Motor 1 X |
 | ... | ... | ... |
 | `M4_X` | -1..1 | Motor 4 X |
+
+### Арминг
+| Параметр | Значение | Описание |
+|----------|----------|----------|
+| `RC6_OPTION` | 31 | AUX канал для ARMDISARM |
 
 ---
 
@@ -90,7 +104,7 @@ RC Input → get_pilot_input() → [-1, +1]
     └── BRAKE: motors->*_out = 0
 
 MotorMix:
-    [yaw, pitch, roll, x] × matrix → [M1..M4] → PWM
+    [yaw, pitch, roll, x] × matrix → [M1..M4] → PWM 1000-2000
 ```
 
 ---
@@ -99,5 +113,8 @@ MotorMix:
 
 | Коммит | Описание |
 |--------|----------|
+| `9ed6cb1` | feat: button-based arming via AUX channel |
+| `9a4eafe` | feat: remove sensor dependencies, enable bidirectional motors |
+| `e66a64f` | docs: update all documentation for manual-only branch |
 | `c61ad61` | feat(manual-only): strip down to Manual + BRAKE modes only |
 | `1410489` | refactor: rename LAND mode to BRAKE mode |

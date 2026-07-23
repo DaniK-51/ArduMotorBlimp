@@ -17,9 +17,18 @@ Custom blimp (Lighter-Than-Air) vehicle implementation for ArduPilot.
 
 4 static motors with configurable mixing matrix (16 parameters: `M1_YAW`..`M4_X`).
 
-```
-MotorMix output = [yaw_out, pitch_out, roll_out, x_out] × mixing_matrix → [M1, M2, M3, M4]
-```
+Bidirectional PWM output:
+| PWM | State |
+|-----|-------|
+| 1000 | Full reverse |
+| 1500 | Stop |
+| 2000 | Full forward |
+
+### Arming
+
+Button-based arming via AUX channel switch:
+1. Set an RC channel (5-8) to `AUX_FUNC=31` (ARMDISARM)
+2. Toggle switch HIGH to arm, LOW to disarm
 
 ## Build
 
