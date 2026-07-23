@@ -49,51 +49,16 @@ SCHED_TASK_CLASS arguments:
 
  */
 const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
-    // update INS immediately to get current gyro data populated
     FAST_TASK_CLASS(AP_InertialSensor, &blimp.ins, update),
-    // send outputs to the motors library immediately
     FAST_TASK(motors_output),
-    // run EKF state estimator (expensive)
-    FAST_TASK(read_AHRS),
-    // Inertial Nav
-    FAST_TASK(read_inertia),
-    // check if ekf has reset target heading or position
-    FAST_TASK(check_ekf_reset),
-    // run the attitude controllers
     FAST_TASK(update_flight_mode),
-    // update home from EKF if necessary
-    FAST_TASK(update_home_from_EKF),
 
     SCHED_TASK(rc_loop,              100,    130,   3),
     SCHED_TASK(throttle_loop,         50,     75,   6),
-    SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
-    SCHED_TASK(update_batt_compass,   10,    120,  12),
-    SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
     SCHED_TASK(arm_motors_check,      10,     50,  18),
-    SCHED_TASK(update_altitude,       10,    100,  21),
-    SCHED_TASK(three_hz_loop,          3,     75,  24),
-#if AP_SERVORELAYEVENTS_ENABLED
-    SCHED_TASK_CLASS(AP_ServoRelayEvents,  &blimp.ServoRelayEvents,      update_events, 50,     75,  27),
-#endif
-#if HAL_LOGGING_ENABLED
-    SCHED_TASK(full_rate_logging,     50,    50,  33),
-#endif
     SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90,  36),
-    SCHED_TASK(one_hz_loop,            1,    100,  39),
-    SCHED_TASK(ekf_check,             10,     75,  42),
-    SCHED_TASK(check_vibration,       10,     50,  45),
-    SCHED_TASK(gpsglitch_check,       10,     50,  48),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180,  51),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_send,    400, 550,  54),
-#if HAL_LOGGING_ENABLED
-    SCHED_TASK(ten_hz_logging_loop,   10,    350,  57),
-    SCHED_TASK(twentyfive_hz_logging, 25,    110,  60),
-    SCHED_TASK_CLASS(AP_Logger,      &blimp.logger,           periodic_tasks, 400, 300,  63),
-#endif
-    SCHED_TASK_CLASS(AP_InertialSensor,    &blimp.ins,                 periodic,       400,  50,  66),
-#if HAL_LOGGING_ENABLED
-    SCHED_TASK_CLASS(AP_Scheduler,         &blimp.scheduler,           update_logging, 0.1,  75,  69),
-#endif
 };
 
 void Blimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,

@@ -131,10 +131,12 @@ MotorMix::MotorMix(uint16_t loop_rate) :
 
 void MotorMix::setup_motors()
 {
-    SRV_Channels::set_angle(SRV_Channel::k_motor1, MOTOR_SCALE_MAX);
-    SRV_Channels::set_angle(SRV_Channel::k_motor2, MOTOR_SCALE_MAX);
-    SRV_Channels::set_angle(SRV_Channel::k_motor3, MOTOR_SCALE_MAX);
-    SRV_Channels::set_angle(SRV_Channel::k_motor4, MOTOR_SCALE_MAX);
+    // Configure motor channels for bidirectional PWM output
+    // Range: 1000 (full reverse) to 2000 (full forward), 1500 = stop
+    for (int8_t i = 0; i < NUM_MOTORS; i++) {
+        SRV_Channels::set_range(SRV_Channel::get_motor_function(i), 1000);
+        SRV_Channels::set_output_pwm(SRV_Channel::get_motor_function(i), 1500);
+    }
 }
 
 void MotorMix::output()
@@ -166,9 +168,10 @@ void MotorMix::output()
         motor_outputs[i] = constrain_float(motor_outputs[i], -1, 1);
     }
 
-    // Output to servos
+    // Output to servos (bidirectional: 1000=reverse, 1500=stop, 2000=forward)
     for (int8_t i = 0; i < NUM_MOTORS; i++) {
-        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), motor_outputs[i] * MOTOR_SCALE_MAX);
+        float pwm = 1500.0f + motor_outputs[i] * 500.0f;
+        SRV_Channels::set_output_pwm(SRV_Channels::get_motor_function(i), pwm);
     }
 
 #if HAL_LOGGING_ENABLED
