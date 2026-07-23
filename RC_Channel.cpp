@@ -54,7 +54,8 @@ bool RC_Channels_Blimp::has_valid_input() const
 
 RC_Channel * RC_Channels_Blimp::get_arming_channel(void) const
 {
-    return blimp.channel_yaw;
+    // arming via AUX channel ARMDISARM function, not rudder
+    return nullptr;
 }
 
 // init_aux_switch_function - initialize aux functions
@@ -111,8 +112,24 @@ bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         }
         break;
 
-    case AUX_FUNC::LOITER:
-        do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
+    case AUX_FUNC::ARMDISARM:
+        // Arm/disarm via switch toggle
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            if (!blimp.motors->armed()) {
+                // arm
+                if (blimp.arming.arm(AP_Arming::Method::AUX_FUNCTION)) {
+                    AP_Notify::events.user_mode_change = 1;
+                    blimp.gcs().send_text(MAV_SEVERITY_INFO, "Armed");
+                }
+            }
+        } else if (ch_flag == AuxSwitchPos::LOW) {
+            if (blimp.motors->armed()) {
+                // disarm
+                blimp.arming.disarm(AP_Arming::Method::AUX_FUNCTION);
+                AP_Notify::events.user_mode_change = 1;
+                blimp.gcs().send_text(MAV_SEVERITY_INFO, "Disarmed");
+            }
+        }
         break;
 
     case AUX_FUNC::MANUAL:
