@@ -131,11 +131,11 @@ MotorMix::MotorMix(uint16_t loop_rate) :
 
 void MotorMix::setup_motors()
 {
-    // Configure motor channels for direct PWM output
-    // Each motor uses k_motor1..k_motor4 functions
-    // Protocol is set via SERVO_DSHOT_ETH or SERVO_PROTOCOL parameters
+    // Configure motor channels for scaled output
+    // Scale 1000 means: -1000=reverse, 0=stop, +1000=forward
+    // SRV_Channel converts this to the actual protocol (PWM, DSHOT, etc.)
     for (int8_t i = 0; i < NUM_MOTORS; i++) {
-        SRV_Channels::set_output_pwm(SRV_Channel::get_motor_function(i), 1500);
+        SRV_Channels::set_angle(SRV_Channel::get_motor_function(i), MOTOR_SCALE_MAX);
     }
 }
 
@@ -168,10 +168,9 @@ void MotorMix::output()
         motor_outputs[i] = constrain_float(motor_outputs[i], -1, 1);
     }
 
-    // Output to servos (bidirectional: 1000=reverse, 1500=stop, 2000=forward)
+    // Output to servos via set_output_scaled (supports PWM, DSHOT, etc.)
     for (int8_t i = 0; i < NUM_MOTORS; i++) {
-        float pwm = 1500.0f + motor_outputs[i] * 500.0f;
-        SRV_Channels::set_output_pwm(SRV_Channels::get_motor_function(i), pwm);
+        SRV_Channels::set_output_scaled(SRV_Channel::get_motor_function(i), motor_outputs[i] * MOTOR_SCALE_MAX);
     }
 
 #if HAL_LOGGING_ENABLED
