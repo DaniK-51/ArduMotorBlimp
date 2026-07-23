@@ -125,7 +125,7 @@ const AP_Param::GroupInfo MotorMix::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_TYPE", 17, MotorMix, pwm_type, 0),
+    AP_GROUPINFO("PWM_TYPE", 17, MotorMix, pwm_type, 5),
 
     AP_GROUPEND
 };
