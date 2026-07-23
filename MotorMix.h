@@ -54,6 +54,8 @@ protected:
     AP_Float            motor_roll[NUM_MOTORS];
     AP_Float            motor_x[NUM_MOTORS];
 
+    AP_Int8             pwm_type;    // 0=Normal,1=OneShot,2=OneShot125,3=Brushed,4-7=DShot150-1200
+
 public:
     float               yaw_out;    // [-1, +1] rotational around Z
     float               pitch_out;  // [-1, +1] rotational around Y

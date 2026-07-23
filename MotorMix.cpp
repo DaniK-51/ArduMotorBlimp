@@ -117,7 +117,15 @@ const AP_Param::GroupInfo MotorMix::var_info[] = {
     // @Description: How much motor 4 contributes to forward/backward movement.
     // @Range: -1 1
     // @User: Standard
-    AP_GROUPINFO("M4_X", 16, MotorMix, motor_x[3], 1),
+    AP_GROUPINFO("M4_X", 16, MotorMix, motor_x[3], 0),
+
+    // @Param: PWM_TYPE
+    // @DisplayName: Output PWM type
+    // @Description: Motor output protocol: 0=NormalPWM, 1=OneShot, 2=OneShot125, 3=Brushed, 4=DShot150, 5=DShot300, 6=DShot600, 7=DShot1200
+    // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("PWM_TYPE", 17, MotorMix, pwm_type, 0),
 
     AP_GROUPEND
 };
@@ -131,12 +139,29 @@ MotorMix::MotorMix(uint16_t loop_rate) :
 
 void MotorMix::setup_motors()
 {
-    // Configure motor channels for scaled output
-    // Scale 1000 means: -1000=reverse, 0=stop, +1000=forward
-    // SRV_Channel converts this to the actual protocol (PWM, DSHOT, etc.)
+    // Set angle for scaled output
     for (int8_t i = 0; i < NUM_MOTORS; i++) {
         SRV_Channels::set_angle(SRV_Channel::get_motor_function(i), MOTOR_SCALE_MAX);
     }
+
+    // Configure output protocol based on PWM_TYPE parameter
+    uint32_t motor_mask = 0;
+    for (int8_t i = 0; i < NUM_MOTORS; i++) {
+        motor_mask |= (1U << SRV_Channel::get_motor_function(i));
+    }
+
+    SRV_Channel::OutputMode out_mode;
+    switch (pwm_type) {
+    case 1: out_mode = SRV_Channel::OutputMode::k_ONESHOT; break;
+    case 2: out_mode = SRV_Channel::OutputMode::k_ONESHOT125; break;
+    case 3: out_mode = SRV_Channel::OutputMode::k_BRUSHED; break;
+    case 4: out_mode = SRV_Channel::OutputMode::k_DSHOT150; break;
+    case 5: out_mode = SRV_Channel::OutputMode::k_DSHOT300; break;
+    case 6: out_mode = SRV_Channel::OutputMode::k_DSHOT600; break;
+    case 7: out_mode = SRV_Channel::OutputMode::k_DSHOT1200; break;
+    default: out_mode = SRV_Channel::OutputMode::k_PWM_NORMAL; break;
+    }
+    SRV_Channels::set_output_mode(motor_mask, out_mode);
 }
 
 void MotorMix::output()
