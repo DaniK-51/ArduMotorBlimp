@@ -131,10 +131,10 @@ MotorMix::MotorMix(uint16_t loop_rate) :
 
 void MotorMix::setup_motors()
 {
-    // Configure motor channels for bidirectional PWM output
-    // Range: 1000 (full reverse) to 2000 (full forward), 1500 = stop
+    // Configure motor channels for direct PWM output
+    // Each motor uses k_motor1..k_motor4 functions
+    // Protocol is set via SERVO_DSHOT_ETH or SERVO_PROTOCOL parameters
     for (int8_t i = 0; i < NUM_MOTORS; i++) {
-        SRV_Channels::set_range(SRV_Channel::get_motor_function(i), 1000);
         SRV_Channels::set_output_pwm(SRV_Channel::get_motor_function(i), 1500);
     }
 }
