@@ -35,7 +35,7 @@ void Blimp::rc_loop()
 
 void Blimp::throttle_loop()
 {
-    update_auto_armed();
+    // empty - auto_armed logic not needed for manual-only
 }
 
 Blimp::Blimp(void)
