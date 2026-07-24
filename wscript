@@ -11,6 +11,11 @@ def build(bld):
             'AP_InertialNav',
             'AP_Motors',
             'AC_AttitudeControl',
+            'AP_AdvancedFailsafe',  # required by GCS_Common.cpp
+            'AP_Avoidance',         # required by RC_Channel base class
+            'AP_Winch',             # required by Lua bindings
+            'AC_PrecLand',          # required by Lua bindings
+            'AP_Follow',            # required by Lua bindings
         ],
     )
 
