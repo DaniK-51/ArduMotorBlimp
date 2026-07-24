@@ -19,7 +19,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RCMapper/AP_RCMapper.h>
-#include <AP_Arming/AP_Arming.h>
+#include "AP_Arming.h"
 
 #include "defines.h"
 #include "config.h"
