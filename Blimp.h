@@ -33,6 +33,7 @@ class Blimp : public AP_Vehicle
 {
 public:
     friend class GCS_Blimp;
+    friend class GCS_MAVLINK_Blimp;
     friend class Parameters;
     friend class ParametersG2;
     friend class AP_Arming_Blimp;

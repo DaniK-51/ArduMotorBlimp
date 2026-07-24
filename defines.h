@@ -2,6 +2,9 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+// RC input scale factor
+#define RC_SCALE 1000
+
 // bit options for DEV_OPTIONS parameter
 enum DevOptions {
     DevOptionADSBMAVLink = 1,
