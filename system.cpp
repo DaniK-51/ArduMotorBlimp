@@ -64,7 +64,7 @@ MAV_TYPE Blimp::get_frame_mav_type()
 // return string corresponding to frame_class
 const char* Blimp::get_frame_string()
 {
-    return "MIXED";
+    return "BLIMP";
 }
 
 /*

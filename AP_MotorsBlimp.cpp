@@ -135,7 +135,11 @@ void AP_MotorsBlimp::output_min()
 {
     set_desired_spool_state(DesiredSpoolState::SHUT_DOWN);
     _spool_state = SpoolState::SHUT_DOWN;
-    output();
+
+    // Write zero to all motors directly
+    for (uint8_t i = 0; i < AP_MOTORS_BLIMP_NUM_MOTORS; i++) {
+        rc_write(i, 1500);  // 1500 = stop for bidirectional
+    }
 }
 
 void AP_MotorsBlimp::output_armed_stabilizing()

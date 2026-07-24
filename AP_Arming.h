@@ -6,16 +6,12 @@ class AP_Arming_Blimp : public AP_Arming
 {
 public:
     friend class Blimp;
-    friend class ToyMode;
 
     AP_Arming_Blimp() : AP_Arming()
     {
-        // default REQUIRE parameter to 1 (Blimp does not have an
-        // actual ARMING_REQUIRE parameter)
         require.set_default((uint8_t)Required::YES_MIN_PWM);
     }
 
-    /* Do not allow copies */
     CLASS_NO_COPY(AP_Arming_Blimp);
 
     bool rc_calibration_checks(bool display_failure) override;
@@ -26,22 +22,17 @@ public:
 protected:
 
     bool pre_arm_checks(bool display_failure) override;
-    bool pre_arm_ekf_attitude_check();
     bool arm_checks(AP_Arming::Method method) override;
 
-    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
     bool mandatory_checks(bool display_failure) override;
 
-    // NOTE! the following check functions *DO* call into AP_Arming:
     bool ins_checks(bool display_failure) override;
     bool gps_checks(bool display_failure) override;
     bool barometer_checks(bool display_failure) override;
     bool board_voltage_checks(bool display_failure) override;
 
-    // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool parameter_checks(bool display_failure);
     bool motor_checks(bool display_failure);
-    bool oa_checks(bool display_failure);
     bool mandatory_gps_checks(bool display_failure);
     bool gcs_failsafe_check(bool display_failure);
     bool alt_checks(bool display_failure);
@@ -50,8 +41,5 @@ protected:
 
 private:
 
-    // actually contains the pre-arm checks.  This is wrapped so that
-    // we can store away success/failure of the checks.
     bool run_pre_arm_checks(bool display_failure);
-
 };

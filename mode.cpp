@@ -129,8 +129,7 @@ void Blimp::notify_flight_mode()
 
 void Mode::update_navigation()
 {
-    // run autopilot to make high level decisions about control modes
-    run_autopilot();
+    // no autopilot in manual-only build
 }
 
 // returns desired thrust/acceleration

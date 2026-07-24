@@ -84,13 +84,8 @@ void GCS_MAVLINK_Blimp::send_nav_controller_output() const
 
 float GCS_MAVLINK_Blimp::vfr_hud_airspeed() const
 {
-    Vector3f airspeed_vec_bf;
-    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
-        // we are running the EKF3 wind estimation code which can give
-        // us an airspeed estimate
-        return airspeed_vec_bf.length();
-    }
-    return AP::gps().ground_speed();
+    // No airspeed sensor in manual-only build
+    return 0.0f;
 }
 
 int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
@@ -473,44 +468,17 @@ MAV_LANDED_STATE GCS_MAVLINK_Blimp::landed_state() const
 
 void GCS_MAVLINK_Blimp::send_wind() const
 {
-    Vector3f airspeed_vec_bf;
-    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
-        // if we don't have an airspeed estimate then we don't have a
-        // valid wind estimate on blimps
-        return;
-    }
-    const Vector3f wind = AP::ahrs().wind_estimate();
-    mavlink_msg_wind_send(
-        chan,
-        degrees(atan2f(-wind.y, -wind.x)),
-        wind.length(),
-        wind.z);
+    // No wind estimation in manual-only build
 }
 
 #if HAL_HIGH_LATENCY2_ENABLED
 uint8_t GCS_MAVLINK_Blimp::high_latency_wind_speed() const
 {
-    Vector3f airspeed_vec_bf;
-    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
-        // if we don't have an airspeed estimate then we don't have a
-        // valid wind estimate on blimps
-        return 0;
-    }
-    // return units are m/s*5
-    const Vector3f wind = AP::ahrs().wind_estimate();
-    return wind.length() * 5;
+    return 0;
 }
 
 uint8_t GCS_MAVLINK_Blimp::high_latency_wind_direction() const
 {
-    Vector3f airspeed_vec_bf;
-    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
-        // if we don't have an airspeed estimate then we don't have a
-        // valid wind estimate on blimps
-        return 0;
-    }
-    const Vector3f wind = AP::ahrs().wind_estimate();
-    // need to convert -180->180 to 0->360/2
-    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+    return 0;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
