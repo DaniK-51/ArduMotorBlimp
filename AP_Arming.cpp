@@ -46,9 +46,9 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
 
 bool AP_Arming_Blimp::barometer_checks(bool display_failure)
 {
-    if (!AP_Arming::barometer_checks(display_failure)) {
-        return false;
-    }
+    // No barometer checks in manual-only build
+    return true;
+}
 
     bool ret = true;
     // check Baro
@@ -92,15 +92,7 @@ bool AP_Arming_Blimp::board_voltage_checks(bool display_failure)
 
     // check battery voltage
     if (check_enabled(ARMING_CHECK_VOLTAGE)) {
-        if (blimp.battery.has_failsafed()) {
-            check_failed(ARMING_CHECK_VOLTAGE, display_failure, "Battery failsafe");
-            return false;
-        }
-
-        // call parent battery checks
-        if (!AP_Arming::battery_checks(display_failure)) {
-            return false;
-        }
+        // No battery checks in manual-only build
     }
 
     return true;

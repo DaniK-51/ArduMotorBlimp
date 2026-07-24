@@ -271,10 +271,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
-    // @Group: BATT
-    // @Path: ../libraries/AP_BattMonitor/AP_BattMonitor.cpp
-    GOBJECT(battery,                "BATT",         AP_BattMonitor),
-
     // @Group: BRD_
     // @Path: ../libraries/AP_BoardConfig/AP_BoardConfig.cpp
     GOBJECT(BoardConfig,            "BRD_",       AP_BoardConfig),

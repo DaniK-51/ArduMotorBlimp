@@ -147,7 +147,9 @@ void AP_MotorsBlimp::output_armed_stabilizing()
                      + _yaw_factor[i] * _yaw_in
                      + _throttle_factor[i] * _throttle_in;
         output = constrain_float(output, 0.0f, 1.0f);
-        rc_write(i, output_to_pwm(output));
+        // Convert [0,1] to PWM [1000,2000] and write via rc_write
+        uint16_t pwm = 1000 + (uint16_t)(output * 1000);
+        rc_write(i, pwm);
     }
 }
 
