@@ -106,70 +106,7 @@ int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
  */
 void GCS_MAVLINK_Blimp::send_pid_tuning()
 {
-    if (blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::BRAKE) {
-        //No PIDs are used in Manual or Land mode.
-        return;
-    }
-
-    static const int8_t axes[] = {
-        PID_SEND::VELX,
-        PID_SEND::VELPITCH,
-        PID_SEND::VELROLL,
-        PID_SEND::VELYAW,
-        PID_SEND::POSX,
-        PID_SEND::POSPITCH,
-        PID_SEND::POSROLL,
-        PID_SEND::POSYAW
-    };
-    for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
-        if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
-            continue;
-        }
-        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
-            return;
-        }
-        const AP_PIDInfo *pid_info = nullptr;
-        switch (axes[i]) {
-        case PID_SEND::VELX:
-            pid_info = &blimp.pid_vel_x.get_pid_info();
-            break;
-        case PID_SEND::VELPITCH:
-            pid_info = &blimp.pid_vel_pitch.get_pid_info();
-            break;
-        case PID_SEND::VELROLL:
-            pid_info = &blimp.pid_vel_roll.get_pid_info();
-            break;
-        case PID_SEND::VELYAW:
-            pid_info = &blimp.pid_vel_yaw.get_pid_info();
-            break;
-        case PID_SEND::POSX:
-            pid_info = &blimp.pid_pos_x.get_pid_info();
-            break;
-        case PID_SEND::POSPITCH:
-            pid_info = &blimp.pid_pos_pitch.get_pid_info();
-            break;
-        case PID_SEND::POSROLL:
-            pid_info = &blimp.pid_pos_roll.get_pid_info();
-            break;
-        case PID_SEND::POSYAW:
-            pid_info = &blimp.pid_pos_yaw.get_pid_info();
-            break;
-        default:
-            continue;
-        }
-        if (pid_info != nullptr) {
-            mavlink_msg_pid_tuning_send(chan,
-                                        axes[i],
-                                        pid_info->target,
-                                        pid_info->actual,
-                                        pid_info->FF,
-                                        pid_info->P,
-                                        pid_info->I,
-                                        pid_info->D,
-                                        pid_info->slew_rate,
-                                        pid_info->Dmod);
-        }
-    }
+    // No PID controllers in manual-only build
 }
 
 uint8_t GCS_MAVLINK_Blimp::sysid_my_gcs() const
