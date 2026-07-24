@@ -80,7 +80,7 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
     switch (ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = blimp.set_mode(mode, ModeReason::AUX_FUNCTION);
+        const bool success = blimp.set_mode(mode, ModeReason::AUX_SWITCH);
         if (blimp.ap.initialised) {
             if (success) {
                 AP_Notify::events.user_mode_change = 1;
@@ -113,7 +113,7 @@ bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         if (ch_flag == AuxSwitchPos::HIGH) {
             if (!blimp.motors->armed()) {
                 // arm
-                if (blimp.arming.arm(AP_Arming::Method::AUX_FUNCTION)) {
+                if (blimp.arming.arm(AP_Arming::Method::AUXSWITCH)) {
                     AP_Notify::events.user_mode_change = 1;
                     blimp.gcs().send_text(MAV_SEVERITY_INFO, "Armed");
                 }
@@ -121,7 +121,7 @@ bool RC_Channel_Blimp::do_aux_function(const AUX_FUNC ch_option, const AuxSwitch
         } else if (ch_flag == AuxSwitchPos::LOW) {
             if (blimp.motors->armed()) {
                 // disarm
-                blimp.arming.disarm(AP_Arming::Method::AUX_FUNCTION);
+                blimp.arming.disarm(AP_Arming::Method::AUXSWITCH);
                 AP_Notify::events.user_mode_change = 1;
                 blimp.gcs().send_text(MAV_SEVERITY_INFO, "Disarmed");
             }
