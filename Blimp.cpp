@@ -11,7 +11,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK(update_flight_mode),
 
     SCHED_TASK(rc_loop,              100,    130,   3),
-    SCHED_TASK(throttle_loop,         50,     75,   6),
     SCHED_TASK(arm_motors_check,      10,     50,  18),
     SCHED_TASK_CLASS(AP_Notify,            &blimp.notify,              update,          50,  90,  36),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&blimp._gcs,          update_receive, 400, 180,  51),
@@ -33,11 +32,6 @@ void Blimp::rc_loop()
 {
     read_radio();
     rc().read_mode_switch();
-}
-
-void Blimp::throttle_loop()
-{
-    // empty - auto_armed logic not needed for manual-only
 }
 
 Blimp::Blimp(void)

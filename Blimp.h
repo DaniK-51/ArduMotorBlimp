@@ -148,7 +148,6 @@ private:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void rc_loop();
-    void throttle_loop();
 
     bool failsafe_option(FailsafeOption opt) const;
     void failsafe_radio_on_event();
