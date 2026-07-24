@@ -13,8 +13,6 @@
 Mode::Mode(void) :
     g(blimp.g),
     g2(blimp.g2),
-    inertial_nav(blimp.inertial_nav),
-    ahrs(blimp.ahrs),
     motors(blimp.motors),
     channel_right(blimp.channel_right),
     channel_front(blimp.channel_front),
