@@ -15,14 +15,19 @@ Custom blimp (Lighter-Than-Air) vehicle implementation for ArduPilot.
 
 ### Motor Control
 
-4 static motors with configurable mixing matrix (16 parameters: `M1_YAW`..`M4_X`).
+4 static motors with configurable mixing matrix via `AP_MotorsBlimp` (inherits `AP_Motors`).
 
-Bidirectional PWM output:
-| PWM | State |
-|-----|-------|
-| 1000 | Full reverse |
-| 1500 | Stop |
-| 2000 | Full forward |
+Protocol selection via `MOTOR_PWM_TYPE` parameter:
+| Value | Protocol |
+|-------|----------|
+| 0 | Normal PWM |
+| 1 | OneShot |
+| 2 | OneShot125 |
+| 3 | Brushed |
+| 4 | DShot150 |
+| 5 | DShot300 |
+| 6 | DShot600 |
+| 7 | DShot1200 |
 
 ### Arming
 
