@@ -23,7 +23,7 @@
 
 #include "defines.h"
 #include "config.h"
-#include "MotorMix.h"
+#include "AP_MotorsBlimp.h"
 #include "RC_Channel.h"
 #include "GCS_Blimp.h"
 #include "Parameters.h"
@@ -41,7 +41,7 @@ public:
     friend class Mode;
     friend class ModeManual;
     friend class ModeBrake;
-    friend class MotorMix;
+    friend class AP_MotorsBlimp;
 
     Blimp(void);
 
@@ -104,7 +104,7 @@ private:
         return failsafe.radio || failsafe.gcs || failsafe.ekf;
     }
 
-    MotorMix *motors;
+    AP_MotorsBlimp *motors;
 
     uint32_t last_radio_update_ms;
     uint32_t arm_time_ms;

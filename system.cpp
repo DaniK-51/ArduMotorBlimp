@@ -75,16 +75,11 @@ const char* Blimp::get_frame_string()
  */
 void Blimp::allocate_motors(void)
 {
-    switch ((MotorMix::motor_frame_class)g2.frame_class.get()) {
-    case MotorMix::MOTOR_FRAME_MIXED:
-    default:
-        motors = NEW_NOTHROW MotorMix(blimp.scheduler.get_loop_rate_hz());
-        break;
-    }
+    motors = NEW_NOTHROW AP_MotorsBlimp(blimp.scheduler.get_loop_rate_hz());
     if (motors == nullptr) {
-        AP_BoardConfig::allocation_error("FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
+        AP_BoardConfig::allocation_error("Failed to allocate AP_MotorsBlimp");
     }
-    AP_Param::load_object_from_eeprom(motors, MotorMix::var_info);
+    AP_Param::load_object_from_eeprom(motors, AP_MotorsBlimp::var_info);
 
     AP_Param::reload_defaults_file(true);
     AP_Param::invalidate_count();

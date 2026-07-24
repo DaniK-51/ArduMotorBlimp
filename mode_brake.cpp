@@ -2,11 +2,10 @@
 
 void ModeBrake::run()
 {
-    // BRAKE mode: stop all movement and disable motors
-    motors->yaw_out = 0;
-    motors->pitch_out = 0;
-    motors->roll_out = 0;
-    motors->x_out = 0;
+    motors->set_roll(0);
+    motors->set_pitch(0);
+    motors->set_yaw(0);
+    motors->set_throttle(0);
 }
 
 void Blimp::set_mode_brake_failsafe(ModeReason reason)

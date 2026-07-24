@@ -92,7 +92,7 @@ protected:
     ParametersG2 &g2;
     AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
-    MotorMix *&motors;
+    AP_MotorsBlimp *&motors;
     RC_Channel *&channel_right;
     RC_Channel *&channel_front;
     RC_Channel *&channel_up;

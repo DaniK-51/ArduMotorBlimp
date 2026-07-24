@@ -333,8 +333,8 @@ const AP_Param::Info Blimp::var_info[] = {
     GOBJECT(g2, "",  ParametersG2),
 
     // @Group: MOTOR_
-    // @Path: MotorMix.cpp
-    GOBJECTPTR(motors, "MOTOR_", MotorMix),
+    // @Path: AP_MotorsBlimp.cpp
+    GOBJECTPTR(motors, "MOTOR_", AP_MotorsBlimp),
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
