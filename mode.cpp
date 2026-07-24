@@ -59,26 +59,17 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
         return false;
     }
 
-    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.
 
     if (!ignore_checks &&
-        new_flightmode->requires_GPS() &&
-        !blimp.position_ok()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires position", new_flightmode->name());
+        new_flightmode->requires_GPS()) {
+        // No GPS in manual-only build, can't switch to GPS-requiring modes
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s requires GPS", new_flightmode->name());
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
     }
 
-    // check for valid altitude if old mode did not require it but new one does
-    // we only want to stop changing modes if it could make things worse
-    if (!ignore_checks &&
-        !blimp.ekf_alt_ok() &&
-        flightmode->has_manual_throttle() &&
-        !new_flightmode->has_manual_throttle()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
-        return false;
-    }
+    // GPS check above already handles GPS-requiring modes
 
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed %s", new_flightmode->name());
