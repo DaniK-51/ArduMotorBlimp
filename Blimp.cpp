@@ -1,5 +1,7 @@
 #include "Blimp.h"
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros, priority)
 #define FAST_TASK(func) FAST_TASK_CLASS(Blimp, &blimp, func)
 
