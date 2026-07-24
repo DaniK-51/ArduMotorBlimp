@@ -2,7 +2,7 @@
 
 #include <RC_Channel/RC_Channel.h>
 #include "AP_MotorsBlimp.h"
-#include "mode.h" //this includes Blimp.h which includes MotorMix.h
+#include "mode.h"
 
 class RC_Channel_Blimp : public RC_Channel
 {

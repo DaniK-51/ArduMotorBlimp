@@ -97,7 +97,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
     // @Values:  0:Disabled,3:Enabled always Land
     // @User: Standard
-    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_RTL),
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_BRAKE),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value

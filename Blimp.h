@@ -109,6 +109,8 @@ private:
     uint32_t last_radio_update_ms;
     uint32_t arm_time_ms;
 
+    LowPassFilterFloat rc_throttle_control_in_filter;
+
     AP_Param param_loader;
 
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -137,27 +139,24 @@ private:
         -1
     };
 
-    // AP_State.cpp
     void set_auto_armed(bool b);
     void set_failsafe_radio(bool b);
     void set_failsafe_gcs(bool b);
 
-    // Blimp.cpp
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void rc_loop();
     void throttle_loop();
 
-    // events.cpp
     bool failsafe_option(FailsafeOption opt) const;
     void failsafe_radio_on_event();
     void failsafe_radio_off_event();
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
 
-    // failsafe.cpp
     void failsafe_enable();
     void failsafe_disable();
 
@@ -170,24 +169,19 @@ private:
     void Write_MOTORO(float *outputs);
 #endif
 
-    // mode.cpp
     bool set_mode(Mode::Number mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, const ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode; }
     void update_flight_mode();
     void notify_flight_mode();
 
-    // mode_brake.cpp
     void set_mode_brake_failsafe(ModeReason reason);
 
-    // motors.cpp
     void arm_motors_check();
     void motors_output();
 
-    // Parameters.cpp
     void load_parameters(void) override;
 
-    // radio.cpp
     void default_dead_zones();
     void init_rc_in();
     void init_rc_out();
@@ -196,7 +190,6 @@ private:
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
 
-    // system.cpp
     void init_ardupilot() override;
     MAV_TYPE get_frame_mav_type();
     const char* get_frame_string();
