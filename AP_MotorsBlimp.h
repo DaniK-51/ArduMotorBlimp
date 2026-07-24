@@ -15,7 +15,7 @@ public:
     void init(motor_frame_class frame_class, motor_frame_type frame_type) override;
     void output() override;
     void output_min() override;
-    void set_desired_spool_state(DesiredSpoolState spool) override;
+    void set_desired_spool_state(enum DesiredSpoolState spool);
     float get_throttle_hover() const override { return 0.0f; }
     uint32_t get_motor_mask() override;
     void set_frame_class_and_type(motor_frame_class, motor_frame_type) override {}

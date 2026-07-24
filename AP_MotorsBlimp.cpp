@@ -112,14 +112,23 @@ uint32_t AP_MotorsBlimp::get_motor_mask()
 
 void AP_MotorsBlimp::output()
 {
-    // update throttle filter
     update_throttle_filter();
 
-    // run spool logic
-    output_logic();
+    // Simple spool logic for blimp
+    if (!armed() || !get_interlock()) {
+        _spool_state = SpoolState::SHUT_DOWN;
+    } else if (_spool_desired == DesiredSpoolState::SHUT_DOWN) {
+        _spool_state = SpoolState::SHUT_DOWN;
+    } else {
+        _spool_state = SpoolState::THROTTLE_UNLIMITED;
+    }
 
-    // calculate thrust
-    output_armed_stabilizing();
+    // output motors if spooled up
+    if (_spool_state == SpoolState::THROTTLE_UNLIMITED) {
+        output_armed_stabilizing();
+    } else {
+        output_min();
+    }
 }
 
 void AP_MotorsBlimp::output_min()
@@ -154,7 +163,7 @@ void AP_MotorsBlimp::set_desired_spool_state(DesiredSpoolState desired)
 void AP_MotorsBlimp::update_throttle_filter()
 {
     if (armed()) {
-        _throttle_filter.apply(_throttle_in, _dt_s);
+        _throttle_filter.apply(_throttle_in, _dt);
         _throttle_filter.get();
     } else {
         _throttle_filter.reset(0.0f);
