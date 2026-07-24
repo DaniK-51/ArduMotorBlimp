@@ -1,11 +1,12 @@
 # ArduMotorBlimp Repository Structure and Architecture
 
-**Version:** 2.0  
-**Date:** July 16, 2026  
+**Version:** 3.0  
+**Date:** July 24, 2026  
 **Branch:** `feat/manual-only`  
 **Repository:** https://github.com/DaniK-51/ArduMotorBlimp  
 **Author:** DaniK-51 (Daniyar)  
-**License:** GPL-3.0
+**License:** GPL-3.0  
+**ArduPilot Base:** Copter-4.6.3
 
 ---
 
@@ -15,202 +16,119 @@
 2. [Project Overview](#project-overview)
 3. [Repository Structure](#repository-structure)
 4. [Main Components](#main-components)
-5. [Build System](#build-system)
+5. [Control System](#control-system)
 6. [Flight Modes](#flight-modes)
-7. [Control System](#control-system)
-8. [Safety](#safety)
-9. [Parameters](#parameters)
+7. [Safety](#safety)
+8. [Parameters](#parameters)
+9. [Build System](#build-system)
 10. [Integration with ArduPilot](#integration-with-ardupilot)
 
 ---
 
 ## Introduction
 
-### Document Purpose
+This is the **manual-only** branch — a minimal build containing only Manual and BRAKE modes for first flight testing. All autonomous modes, sensors (AHRS, EKF, GPS), and PID controllers have been removed to minimize binary size and complexity.
 
-This document describes the architecture, structure, and components of the **ArduMotorBlimp** repository — a custom blimp vehicle implementation for the ArduPilot platform.
-
-### Current State
-
-This is the **manual-only** branch — a minimal build containing only Manual and BRAKE modes for first flight testing. All autonomous modes (Velocity, Loiter, RTL, AUTO) have been removed to reduce binary size and complexity.
+**No AHRS, EKF, GPS, compass, or barometer required.** Only RC input → MotorMix → Motors.
 
 ---
 
 ## Project Overview
 
-### What is ArduMotorBlimp?
-
-**ArduMotorBlimp** is a motorized blimp (Lighter-Than-Air vehicle) implementation based on the official ArduPilot platform. It uses 4 static motors with a configurable mixing matrix instead of the original oscillating fins.
-
-### Key Characteristics
+**ArduMotorBlimp** is a motorized blimp (Lighter-Than-Air vehicle) based on ArduPilot. It uses 4 static motors with a configurable mixing matrix via `AP_MotorsBlimp` (inherits `AP_Motors`).
 
 | Parameter | Value |
 |-----------|-------|
-| **Vehicle Type** | Motorized blimp |
-| **Languages** | C++ |
+| **Vehicle Type** | Motorized blimp (MAV_TYPE_AIRSHIP) |
+| **Language** | C++ |
 | **License** | GPL-3.0 |
-| **Base** | Official ArduPilot repository |
-| **Status** | Manual-only build for first flight |
-
-### Main Features
-
-- Configurable 4×4 motor mixing matrix
-- Manual mode (direct RC passthrough)
-- BRAKE mode (emergency stop for failsafe)
-- MAVLink heartbeat and basic telemetry
-- Parameter system via Mission Planner / QGroundControl
+| **ArduPilot Base** | Copter-4.6.3 |
+| **Target Board** | MicoAir743v2 (ChibiOS) |
 
 ---
 
 ## Repository Structure
 
-### File Tree
-
 ```
 ArduMotorBlimp/
-├── Core
-│   ├── Blimp.cpp              # Main loop, scheduler, AHRS reading
-│   ├── Blimp.h                # Main class definition
-│   ├── config.h               # Compile-time configuration
-│   ├── defines.h              # Constants and enums
-│   └── version.h              # Firmware version
-│
-├── Parameters
-│   ├── Parameters.cpp         # Parameter definitions
-│   └── Parameters.h           # Parameter declarations
-│
-├── Flight Modes
-│   ├── mode.cpp               # Base Mode class, get_pilot_input()
-│   ├── mode.h                 # Mode enum and class declarations
-│   ├── mode_manual.cpp        # Manual mode (direct passthrough)
-│   └── mode_brake.cpp         # BRAKE mode (emergency stop)
-│
-├── Motor Control
-│   ├── MotorMix.cpp           # 4×4 mixing matrix, servo output
-│   ├── MotorMix.h             # MotorMix class declaration
-│   └── motors.cpp             # motors_output() pipeline, arming check
-│
-├── RC Input
-│   ├── radio.cpp              # RC channel reading, failsafe
-│   └── RC_Channel.cpp         # RC channel processing
-│
-├── GCS / MAVLink
-│   ├── GCS_Blimp.cpp          # GCS class, sensor status
-│   ├── GCS_Blimp.h            # GCS_Blimp declaration
-│   ├── GCS_Mavlink.cpp        # MAVLink message handling
-│   └── GCS_Mavlink.h          # GCS_MAVLINK_Blimp declaration
-│
-├── Safety
-│   ├── AP_Arming.cpp          # Arming checks
-│   ├── AP_Arming.h
-│   ├── failsafe.cpp           # Failsafe timer
-│   ├── events.cpp             # Failsafe event handling
-│   └── ekf_check.cpp          # EKF validation
-│
-├── System
-│   ├── system.cpp             # init_ardupilot(), allocate_motors()
-│   ├── AP_State.cpp           # Vehicle state flags
-│   ├── commands.cpp           # Home position management
-│   ├── inertia.cpp            # Inertial navigation
-│   └── sensors.cpp            # Barometer reading
-│
-├── Logging
-│   └── Log.cpp                # MOTORI/MOTORO log messages
-│
-└── Build
-    └── wscript                # Waf build configuration
+├── Blimp.cpp              # Main loop, scheduler, constructor
+├── Blimp.h                # Main class definition
+├── AP_MotorsBlimp.cpp     # Inherits AP_Motors, mixing matrix, servo output
+├── AP_MotorsBlimp.h       # AP_MotorsBlimp class declaration
+├── AP_Arming.cpp          # Arming checks (simplified for manual-only)
+├── AP_Arming.h
+├── AP_State.cpp           # Vehicle state flags
+├── GCS_Blimp.cpp          # GCS class, sensor status
+├── GCS_Blimp.h
+├── GCS_Mavlink.cpp        # MAVLink message handling (stripped)
+├── GCS_Mavlink.h
+├── Log.cpp                # MOTORI/MOTORO log messages
+├── Parameters.cpp         # Parameter definitions
+├── Parameters.h
+├── RC_Channel.cpp         # RC channel processing, AUX functions (ARMDISARM)
+├── RC_Channel.h
+├── config.h               # Compile-time configuration
+├── defines.h              # Constants and enums
+├── events.cpp             # Failsafe event handling
+├── failsafe.cpp           # Failsafe timer (main loop hang detection)
+├── mode.cpp               # Base Mode class, get_pilot_input()
+├── mode.h                 # Mode enum and class declarations
+├── mode_brake.cpp         # BRAKE mode (emergency stop)
+├── mode_manual.cpp        # Manual mode (direct passthrough)
+├── motors.cpp             # motors_output() pipeline
+├── radio.cpp              # RC channel reading, failsafe
+├── system.cpp             # init_ardupilot(), allocate_motors()
+├── version.h
+└── wscript                # Waf build configuration
 ```
 
-### File Count
-
-| Category | Count |
-|----------|-------|
-| Source (.cpp) | 18 |
-| Headers (.h) | 12 |
-| Config | 3 |
-| Documentation | 4 |
-| **Total** | **37** |
+**28 source files.**
 
 ---
 
 ## Main Components
 
-### MotorMix — Motor Mixing Matrix
+### AP_MotorsBlimp
 
-**Files:** `MotorMix.h`, `MotorMix.cpp`
-
-Replaces the original `Fins` oscillating fin system with a simple 4×4 mixing matrix.
+Inherits `AP_Motors` from upstream ArduPilot. Provides:
+- Configurable 4×4 mixing matrix (M1_ROLL..M4_THR parameters)
+- Motor protocol selection via `MOTOR_PWM_TYPE` (DSHOT, OneShot, PWM)
+- Bidirectional motor output (PWM 1000-2000)
+- Arming/disarm state management
+- Spool state machine
 
 **4 Control Axes:**
-| Axis | Field | Range | Description |
-|------|-------|-------|-------------|
-| Yaw | `yaw_out` | [-1, +1] | Rotation around Z |
-| Pitch | `pitch_out` | [-1, +1] | Rotation around Y |
-| Roll | `roll_out` | [-1, +1] | Rotation around X |
-| X | `x_out` | [-1, +1] | Linear forward/backward |
+
+| Axis | API Method | Range | Description |
+|------|-----------|-------|-------------|
+| Roll | `set_roll()` | [-1, +1] | Rotation around X |
+| Pitch | `set_pitch()` | [-1, +1] | Rotation around Y |
+| Yaw | `set_yaw()` | [-1, +1] | Rotation around Z |
+| X | `set_throttle()` | [0, +1] | Linear forward/backward |
 
 **Mixing Logic:**
 ```cpp
 for each motor m (0..3):
-    motor_out[m] = motor_yaw[m]   * yaw_out
+    motor_out[m] = motor_roll[m]  * roll_out
                  + motor_pitch[m] * pitch_out
-                 + motor_roll[m]  * roll_out
-                 + motor_x[m]     * x_out
-    constrain(motor_out[m], -1, 1)
-    SRV_Channels::set_output_scaled(k_motor(m+1), motor_out[m] * 1000)
+                 + motor_yaw[m]   * yaw_out
+                 + motor_x[m]     * throttle
+    constrain(motor_out, 0, 1)
+    pwm = 1000 + motor_out * 1000  // [1000, 2000]
+    rc_write(motor_func, pwm)
 ```
-
-**Parameters:** `M1_YAW`..`M4_X` (16 float parameters, range -1..1)
-
-### Mode Manual
-
-**File:** `mode_manual.cpp`
-
-Direct RC passthrough — no PID, no stabilization.
-
-```
-CH1 (Roll)     → motors->roll_out
-CH2 (Pitch)    → motors->x_out     (forward/backward)
-CH3 (Throttle) → motors->pitch_out (altitude)
-CH4 (Yaw)      → motors->yaw_out
-```
-
-### Mode BRAKE
-
-**File:** `mode_brake.cpp`
-
-Emergency stop — zeros all motor outputs. Used as failsafe target.
 
 ---
 
 ## Control System
 
-### Data Flow
+### Data Flow (Manual Mode)
 
 ```
-RC Receiver
-    │ PWM [1000..2000]
-    ▼
-radio.cpp: read_radio()
-    │ channel->get_control_in() / 1000 → [-1, +1]
-    ▼
-mode.cpp: get_pilot_input()
-    │
-    ▼
-mode_manual.cpp: run()
-    │ motors->*_out = pilot.*
-    ▼
-motors.cpp: motors_output()
-    │
-    ▼
-MotorMix.cpp: output()
-    │ [yaw, pitch, roll, x] × matrix → [M1..M4]
-    │ → PWM 1000-2000 (bidirectional)
-    ▼
-Motors
+RC Receiver → radio.cpp → mode_manual.cpp → AP_MotorsBlimp → Motors
 ```
 
-No AHRS, EKF, GPS, or other sensors required for Manual mode.
+**No AHRS, EKF, GPS, or other sensors required.**
 
 ### Scheduler
 
@@ -218,59 +136,35 @@ No AHRS, EKF, GPS, or other sensors required for Manual mode.
 |------|------|----------|
 | INS update | FAST | 0 |
 | motors_output | FAST | 1 |
-| read_AHRS | FAST | 2 |
 | update_flight_mode | FAST | 3 |
-| update_home_from_EKF | FAST | 4 |
 | rc_loop | 100 Hz | 3 |
-| GCS update | 400 Hz | 51-54 |
+| arm_motors_check | 10 Hz | 18 |
+| notify update | 50 Hz | 36 |
+| GCS receive | 400 Hz | 51 |
+| GCS send | 400 Hz | 54 |
 
 ---
 
 ## Flight Modes
 
-### Manual (Mode 1)
+| Mode | Number | Description |
+|------|--------|-------------|
+| **BRAKE** | 0 | Emergency stop — zeros all motors, used for failsafe |
+| **MANUAL** | 1 | Direct RC passthrough to mixing matrix |
 
-**Purpose:** Direct pilot control  
-**GPS Required:** No  
-**Stabilization:** None  
-**Sensors Required:** None — only RC input and motor mixing
+### Manual Mode
 
-Stick positions are mapped directly to motor mixing matrix inputs.
+Stick positions mapped directly to motor mixing matrix:
+```
+CH1 (Roll)     → motors->set_roll()
+CH2 (Pitch)    → motors->set_throttle()  (forward/backward)
+CH3 (Throttle) → motors->set_pitch()     (rotation Y)
+CH4 (Yaw)      → motors->set_yaw()
+```
 
-### BRAKE (Mode 0)
+### BRAKE Mode
 
-**Purpose:** Emergency stop  
-**GPS Required:** No  
-**Stabilization:** None  
-
-All motor outputs set to zero. Used as failsafe target for:
-- Radio signal loss
-- EKF failure
-- GCS connection loss
-
----
-
-## Arming
-
-Button-based arming via AUX channel:
-
-1. Set an RC channel (5-8) to `AUX_FUNC=31` (ARMDISARM) in Mission Planner
-2. Toggle switch HIGH → arm
-3. Toggle switch LOW → disarm
-
-No rudder arming — purely switch-based.
-
----
-
-## Motor Output
-
-Bidirectional PWM for each motor:
-
-| PWM | State |
-|-----|-------|
-| 1000 | Full reverse |
-| 1500 | Stop |
-| 2000 | Full forward |
+All motor outputs zeroed. Used as failsafe target.
 
 ---
 
@@ -279,21 +173,19 @@ Bidirectional PWM for each motor:
 ### Failsafe Chain
 
 ```
-RC signal lost (> 500ms)
-    → set_failsafe_radio(true)
-        → failsafe_radio_on_event()
-            → set_mode_brake_failsafe()
-
-EKF error detected
-    → failsafe_ekf_event()
-        → set_mode_brake_failsafe()
+RC signal lost (> 500ms) → set_failsafe_radio(true) → BRAKE
+Battery failsafe         → handle_battery_failsafe() → BRAKE
+GCS connection lost      → failsafe_gcs_check() → BRAKE
+Main loop hang (2s)      → failsafe_check() → output_min()
 ```
 
 ### Arming
 
-- Motor interlock via rudder
-- Throttle must be at zero for disarming
-- Auto-disarm after configurable delay
+Button-based via AUX channel:
+1. Set RC channel (5-8) to `AUX_FUNC=31` (ARMDISARM)
+2. Toggle switch HIGH → arm, LOW → disarm
+
+No rudder arming.
 
 ---
 
@@ -301,63 +193,99 @@ EKF error detected
 
 ### Motor Mixing (MOTOR_*)
 
-| Parameter | Default | Range | Description |
-|-----------|---------|-------|-------------|
-| `M1_YAW` | 0 | -1..1 | Motor 1 yaw contribution |
-| `M1_PITCH` | 0 | -1..1 | Motor 1 pitch contribution |
-| `M1_ROLL` | 0 | -1..1 | Motor 1 roll contribution |
-| `M1_X` | 0 | -1..1 | Motor 1 X contribution |
-| ... | ... | ... | ... |
-| `M4_X` | 0 | -1..1 | Motor 4 X contribution |
+16 float parameters for the 4×4 mixing matrix:
 
-### System
+| Motor | M_ROLL | M_PITCH | M_YAW | M_X |
+|-------|--------|---------|-------|-----|
+| M1 | -1..1 | -1..1 | -1..1 | -1..1 |
+| M2 | -1..1 | -1..1 | -1..1 | -1..1 |
+| M3 | -1..1 | -1..1 | -1..1 | -1..1 |
+| M4 | -1..1 | -1..1 | -1..1 | -1..1 |
+
+### Motor Protocol
+
+`MOTOR_PWM_TYPE` parameter:
+
+| Value | Protocol |
+|-------|----------|
+| 0 | Normal PWM |
+| 1 | OneShot |
+| 2 | OneShot125 |
+| 3 | Brushed |
+| 4 | DShot150 |
+| 5 | DShot300 (default) |
+| 6 | DShot600 |
+| 7 | DShot1200 |
+
+### Flight Modes
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `FLTMODE1` | MANUAL | Flight mode on CH5 low |
-| `FLTMODE2` | MANUAL | Flight mode on CH5 mid-low |
-| `FLTMODE3` | MANUAL | Flight mode on CH5 mid |
-| `FLTMODE4` | MANUAL | Flight mode on CH5 mid-high |
-| `FLTMODE5` | MANUAL | Flight mode on CH5 high |
-| `SYSID_THISMAV` | 1 | MAVLink system ID |
-| `ARMING_DELAY` | 2s | Delay after arming |
+| `FLTMODE1`-`FLTMODE6` | MANUAL | Flight mode per CH5 position |
 
 ### Failsafe
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `FS_THR_ENABLE` | 3 | Throttle failsafe: 0=Disabled, 3=Always BRAKE |
+| `FS_THR_ENABLE` | 3 | 0=Disabled, 3=Always BRAKE |
 | `FS_THR_VALUE` | 975 | Throttle failsafe threshold (PWM) |
-| `FS_EKF_ACTION` | 1 | EKF failsafe: 1=Switch to BRAKE |
+| `FS_GCS_ENABLE` | 0 | GCS failsafe: 0=Disabled |
+
+### System
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `SYSID_THISMAV` | 1 | MAVLink system ID |
+| `ARMING_DELAY` | 2s | Delay after arming |
+| `DISARM_DELAY` | 10s | Auto-disarm delay |
+
+---
+
+## Build System
+
+### wscript
+
+```python
+ap_libraries = ap_common_vehicle_libraries() + [
+    'AC_InputManager',
+    'AP_InertialNav',
+    'AP_Motors',            # required by AP_MotorsBlimp
+    'AC_AttitudeControl',
+    'AP_AdvancedFailsafe',  # required by GCS_Common.cpp
+    'AP_Avoidance',         # required by RC_Channel base class
+    'AP_Winch',             # required by Lua bindings
+    'AC_PrecLand',          # required by Lua bindings
+    'AP_Follow',            # required by Lua bindings
+]
+```
+
+**Note:** AP_AdvancedFailsafe, AP_Avoidance, AP_Winch, AC_PrecLand, AP_Follow are required by base classes (GCS_MAVLink, RC_Channel, AP_Scripting) even though we don't use them directly.
+
+### Build Commands
+
+```bash
+./waf configure --board MicoAir743v2
+./waf blimp
+```
 
 ---
 
 ## Integration with ArduPilot
 
-### Required Upstream Libraries
+This vehicle code depends on upstream ArduPilot libraries (NOT included in this repo):
 
-This vehicle code depends on ArduPilot libraries (not included in this repo):
-
+- `AP_Motors` — Motor base class (AP_MotorsBlimp inherits from this)
 - `AP_HAL` — Hardware Abstraction Layer
-- `AP_AHRS` — Attitude and Heading Reference System
 - `AP_Param` — Parameter storage
 - `AP_Scheduler` — Task scheduling
 - `AP_Logger` — Data logging
-- `SRV_Channel` — Servo output
+- `SRV_Channel` — Servo/PWM output
 - `RC_Channel` — RC input
 - `GCS_MAVLink` — MAVLink protocol
-- `AP_BattMonitor` — Battery monitoring
 - `AP_Arming` — Arming checks
-- `AP_InertialNav` — Inertial navigation
+- `AC_PID` — PID controllers (used by AP_Motors base)
 
-### Build
-
-```bash
-# Place this repo as ArduPilot/Blimp/
-cd ardupilot
-./waf configure --board sitl
-./waf blimp
-```
+Build requires the full ArduPilot repo structure with `libraries/`, `Tools/`, `modules/`.
 
 ---
 
@@ -367,5 +295,6 @@ cd ardupilot
 |------|---------|-------------|
 | 2026-07-01 | 1.0 | Initial document |
 | 2026-07-16 | 2.0 | Updated for manual-only branch |
+| 2026-07-24 | 3.0 | AP_MotorsBlimp, stripped GCS, removed sensor files |
 
-**Last updated:** July 16, 2026
+**Last updated:** July 24, 2026
