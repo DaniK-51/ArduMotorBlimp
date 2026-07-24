@@ -38,9 +38,6 @@ void Blimp::init_ardupilot()
 
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
 
-    // setup motor output
-    motors->setup_motors();
-
     // enable output to motors
     if (arming.rc_calibration_checks(true)) {
         enable_motor_output();

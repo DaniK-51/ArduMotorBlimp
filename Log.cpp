@@ -46,28 +46,6 @@ void Blimp::Write_MOTORO(float *outputs)
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-struct PACKED log_ParameterTuning {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  parameter;
-    float    tuning_value;
-    float    tuning_min;
-    float    tuning_max;
-};
-
-void Blimp::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max)
-{
-    struct log_ParameterTuning pkt_tune = {
-        LOG_PACKET_HEADER_INIT(LOG_PARAMTUNE_MSG),
-        time_us        : AP_HAL::micros64(),
-        parameter      : param,
-        tuning_value   : tuning_val,
-        tuning_min     : tune_min,
-        tuning_max     : tune_max
-    };
-    logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
-}
-
 const struct LogStructure Blimp::log_structure[] = {
     LOG_COMMON_STRUCTURES,
 
@@ -79,11 +57,6 @@ const struct LogStructure Blimp::log_structure[] = {
     {
         LOG_MOTORO_MSG, sizeof(log_MOTORO),
         "MOTORO",  "Qffff",     "TimeUS,M1,M2,M3,M4", "s----", "F----"
-    },
-
-    {
-        LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
-        "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----"
     },
 };
 

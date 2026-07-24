@@ -441,12 +441,8 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_in
 
 float GCS_MAVLINK_Blimp::vfr_hud_alt() const
 {
-    if (blimp.g2.dev_options.get() & DevOptionVFR_HUDRelativeAlt) {
-        // compatibility option for older mavlink-aware devices that
-        // assume Blimp returns a relative altitude in VFR_HUD.alt
-        return blimp.current_loc.alt * 0.01f;
-    }
-    return GCS_MAVLINK::vfr_hud_alt();
+    // No altitude sensor in manual-only build
+    return 0.0f;
 }
 
 uint64_t GCS_MAVLINK_Blimp::capabilities() const
