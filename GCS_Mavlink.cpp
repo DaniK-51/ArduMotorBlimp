@@ -88,19 +88,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = { MSG_SYSTEM_TIME };
 static const ap_message STREAM_PARAMS_msgs[] = { MSG_NEXT_PARAM };
 static const ap_message STREAM_ADSB_msgs[] = {};
 
-// THIS IS REQUIRED - without it GCS base class doesn't know what messages to send
-const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
-    MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
-    MAV_STREAM_ENTRY(STREAM_EXTENDED_STATUS),
-    MAV_STREAM_ENTRY(STREAM_POSITION),
-    MAV_STREAM_ENTRY(STREAM_RC_CHANNELS),
-    MAV_STREAM_ENTRY(STREAM_EXTRA1),
-    MAV_STREAM_ENTRY(STREAM_EXTRA2),
-    MAV_STREAM_ENTRY(STREAM_EXTRA3),
-    MAV_STREAM_ENTRY(STREAM_ADSB),
-    MAV_STREAM_ENTRY(STREAM_PARAMS),
-    MAV_STREAM_TERMINATOR
-};
+// all_stream_entries is provided by GCS_Dummy.cpp in GCS_MAVLink library
+// Do NOT define it here - causes multiple definition linker error
 
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status, const mavlink_message_t &msg)
 {
