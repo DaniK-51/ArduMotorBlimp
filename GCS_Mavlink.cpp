@@ -396,10 +396,10 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_DENIED;
     }
 
-    if (request_location.sanitize(blimp.current_loc)) {
-        // if the location wasn't already sane don't load it
-        return MAV_RESULT_DENIED; // failed as the location is not valid
-    }
+    // if (request_location.sanitize(blimp.current_loc)) {
+    //     // if the location wasn't already sane don't load it
+    //     return MAV_RESULT_DENIED; // failed as the location is not valid
+    // }
 
     return MAV_RESULT_ACCEPTED;
 }
