@@ -26,6 +26,7 @@
 #include "AP_MotorsBlimp.h"
 #include "RC_Channel.h"
 #include "GCS_Blimp.h"
+#include "GCS_Mavlink.h"
 #include "Parameters.h"
 #include "mode.h"
 
