@@ -5,6 +5,8 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) \
     SCHED_TASK_CLASS(ArduMotorBlimp, &motorblimp, func, rate_hz, max_time_micros, priority)
 
+#define MOTOR_SCALE 1000  // ±1000 for bidirectional motors
+
 const AP_Scheduler::Task ArduMotorBlimp::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,           100,    130,   3),
     SCHED_TASK(motors_output,     400,    100,   6),
@@ -17,7 +19,17 @@ ArduMotorBlimp::ArduMotorBlimp(void)
 
 void ArduMotorBlimp::init_ardupilot()
 {
+    // RC
     rc().init();
+
+    // Motor output — bidirectional, ±1000 range
+    SRV_Channels::set_angle(SRV_Channel::k_motor1, MOTOR_SCALE);
+    SRV_Channels::set_angle(SRV_Channel::k_motor2, MOTOR_SCALE);
+    SRV_Channels::set_angle(SRV_Channel::k_motor3, MOTOR_SCALE);
+    SRV_Channels::set_angle(SRV_Channel::k_motor4, MOTOR_SCALE);
+
+    AP::srv().enable_aux_servos();
+    SRV_Channels::update_aux_servo_function();
 }
 
 void ArduMotorBlimp::load_parameters()
@@ -61,19 +73,29 @@ void ArduMotorBlimp::rc_loop()
 
 void ArduMotorBlimp::motors_output()
 {
-    // For now — pass-through RC to outputs
-    // Motor mixing will be added later
     if (!arming.is_armed()) {
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor1, 0);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor2, 0);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor3, 0);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor4, 0);
+        // Disarmed — all motors stop
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor3, 0);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor4, 0);
     } else {
-        // Direct pass-through for testing
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor1, rc_in.forward);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor2, rc_in.forward);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor3, rc_in.pitch);
-        SRV_Channels::set_output_norm(SRV_Channel::k_motor4, rc_in.roll);
+        // Motor mixing — coefficients are hardcoded for now
+        // Will be parameterized later
+        float m1 = rc_in.forward + rc_in.yaw + rc_in.pitch;
+        float m2 = rc_in.forward - rc_in.yaw + rc_in.pitch;
+        float m3 = rc_in.pitch;
+        float m4 = rc_in.roll;
+
+        m1 = constrain_float(m1, -1.0f, 1.0f);
+        m2 = constrain_float(m2, -1.0f, 1.0f);
+        m3 = constrain_float(m3, -1.0f, 1.0f);
+        m4 = constrain_float(m4, -1.0f, 1.0f);
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, m1 * MOTOR_SCALE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, m2 * MOTOR_SCALE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor3, m3 * MOTOR_SCALE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor4, m4 * MOTOR_SCALE);
     }
 
     SRV_Channels::calc_pwm();
