@@ -8,6 +8,7 @@
 #include "Parameters.h"
 #include "GCS_MotorBlimp.h"
 #include "RC_Channel_MotorBlimp.h"
+#include "AP_Arming_MotorBlimp.h"
 
 class ArduMotorBlimp : public AP_Vehicle {
     friend class GCS_MAVLINK_MotorBlimp;
@@ -45,9 +46,21 @@ private:
 
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
+    AP_Arming_MotorBlimp arming;
+
     AP_Param param_loader{var_info};
 
+    // RC input — normalized values [-1, 1]
+    struct {
+        float forward;  // throttle stick
+        float roll;     // roll stick
+        float pitch;    // pitch stick
+        float yaw;      // yaw stick
+    } rc_in;
+
     // Scheduler tasks
+    void rc_loop();
+    void motors_output();
     void one_hz_loop();
 };
 

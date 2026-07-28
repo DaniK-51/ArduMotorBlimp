@@ -4,11 +4,17 @@
 uint8_t GCS_MAVLINK_MotorBlimp::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+    if (motorblimp.arming.is_armed()) {
+        _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+    }
     return _base_mode;
 }
 
 MAV_STATE GCS_MAVLINK_MotorBlimp::vehicle_system_status() const
 {
+    if (motorblimp.arming.is_armed()) {
+        return MAV_STATE_ACTIVE;
+    }
     return MAV_STATE_STANDBY;
 }
 
