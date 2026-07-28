@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "config.h"
 #include "defines.h"
@@ -25,6 +26,8 @@ public:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
 
+    static const AP_Param::Info var_info[];
+
 private:
     Parameters g;
 
@@ -35,6 +38,12 @@ private:
 
     GCS_MotorBlimp _gcs;
     GCS_MotorBlimp &gcs() { return _gcs; }
+
+    AP_BattMonitor battery{0,
+                           FUNCTOR_BIND_MEMBER(&ArduMotorBlimp::handle_battery_failsafe, void, const char*, const int8_t),
+                           nullptr};
+
+    void handle_battery_failsafe(const char* type_str, const int8_t action);
 
     AP_Param param_loader{var_info};
 

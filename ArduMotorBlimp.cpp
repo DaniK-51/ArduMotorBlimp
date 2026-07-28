@@ -1,5 +1,7 @@
 #include "ArduMotorBlimp.h"
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) \
     SCHED_TASK_CLASS(ArduMotorBlimp, &motorblimp, func, rate_hz, max_time_micros, priority)
 
@@ -42,6 +44,17 @@ void ArduMotorBlimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 void ArduMotorBlimp::one_hz_loop()
 {
 }
+
+void ArduMotorBlimp::handle_battery_failsafe(const char* type_str, const int8_t action)
+{
+}
+
+// Stubs for symbols required by linked libraries
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_Avoidance/AP_Avoidance.h>
+bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) { return false; }
+AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
+AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 
 ArduMotorBlimp motorblimp;
 AP_Vehicle& vehicle = motorblimp;
