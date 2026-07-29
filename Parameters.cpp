@@ -21,8 +21,8 @@ const AP_Param::Info ArduMotorBlimp::var_info[] = {
     GOBJECT(BoardConfig, "BRD_", AP_BoardConfig),
 
     // EKF
-    GOBJECTN(ahrs.ekf2.EKF2, NavEKF2, "EK2_", NavEKF2),
-    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 
     // GCS
     GOBJECT(_gcs, "MAV", GCS),

@@ -14,12 +14,6 @@ public:
         }
         return &obj_channels[chan];
     }
-    const RC_Channel_MotorBlimp *channel(const uint8_t chan) const override {
-        if (chan >= ARRAY_SIZE(obj_channels)) {
-            return nullptr;
-        }
-        return &obj_channels[chan];
-    }
 
     bool in_rc_failsafe() const override { return false; }
 
