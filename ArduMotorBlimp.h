@@ -31,6 +31,7 @@ public:
 
 private:
     Parameters g;
+    ParametersG2 g2;
 
     static const AP_Scheduler::Task scheduler_tasks[];
 

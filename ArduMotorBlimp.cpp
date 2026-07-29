@@ -82,10 +82,15 @@ void ArduMotorBlimp::motors_output()
     } else {
         // Motor mixing — coefficients are hardcoded for now
         // Will be parameterized later
-        float m1 = rc_in.forward + rc_in.yaw + rc_in.pitch;
-        float m2 = rc_in.forward - rc_in.yaw + rc_in.pitch;
-        float m3 = rc_in.pitch;
-        float m4 = rc_in.roll;
+        // Motor mixing — parameterized coefficients
+        float m1 = g2.mix_m1_fwd * rc_in.forward + g2.mix_m1_roll * rc_in.roll +
+                   g2.mix_m1_pitch * rc_in.pitch + g2.mix_m1_yaw * rc_in.yaw;
+        float m2 = g2.mix_m2_fwd * rc_in.forward + g2.mix_m2_roll * rc_in.roll +
+                   g2.mix_m2_pitch * rc_in.pitch + g2.mix_m2_yaw * rc_in.yaw;
+        float m3 = g2.mix_m3_fwd * rc_in.forward + g2.mix_m3_roll * rc_in.roll +
+                   g2.mix_m3_pitch * rc_in.pitch + g2.mix_m3_yaw * rc_in.yaw;
+        float m4 = g2.mix_m4_fwd * rc_in.forward + g2.mix_m4_roll * rc_in.roll +
+                   g2.mix_m4_pitch * rc_in.pitch + g2.mix_m4_yaw * rc_in.yaw;
 
         m1 = constrain_float(m1, -1.0f, 1.0f);
         m2 = constrain_float(m2, -1.0f, 1.0f);

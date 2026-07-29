@@ -24,7 +24,35 @@ public:
         k_param_NavEKF2 = 12,
         k_param_NavEKF3 = 13,
         k_param__gcs = 14,
+        k_param_g2 = 15,
     };
 
     AP_Int16 format_version;
+};
+
+class ParametersG2 {
+public:
+    static const AP_Param::GroupInfo var_info[];
+
+    // Motor mixing coefficients: motor[i] = sum(coeff[i][j] * axis[j])
+    // 4 motors x 4 axes = 16 parameters
+    AP_Float mix_m1_fwd;
+    AP_Float mix_m1_roll;
+    AP_Float mix_m1_pitch;
+    AP_Float mix_m1_yaw;
+
+    AP_Float mix_m2_fwd;
+    AP_Float mix_m2_roll;
+    AP_Float mix_m2_pitch;
+    AP_Float mix_m2_yaw;
+
+    AP_Float mix_m3_fwd;
+    AP_Float mix_m3_roll;
+    AP_Float mix_m3_pitch;
+    AP_Float mix_m3_yaw;
+
+    AP_Float mix_m4_fwd;
+    AP_Float mix_m4_roll;
+    AP_Float mix_m4_pitch;
+    AP_Float mix_m4_yaw;
 };
