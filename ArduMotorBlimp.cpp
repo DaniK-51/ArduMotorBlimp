@@ -62,6 +62,7 @@ void ArduMotorBlimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 void ArduMotorBlimp::rc_loop()
 {
     rc().read_input();
+    rc().read_aux_all();
 
     const RC_Channel &ch_throttle = rc().get_throttle_channel();
     const RC_Channel &ch_roll = rc().get_roll_channel();
