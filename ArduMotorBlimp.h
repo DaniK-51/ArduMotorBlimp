@@ -2,6 +2,7 @@
 
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 #include "config.h"
 #include "defines.h"

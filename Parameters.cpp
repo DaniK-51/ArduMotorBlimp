@@ -21,7 +21,9 @@ const AP_Param::Info ArduMotorBlimp::var_info[] = {
     GOBJECT(BoardConfig, "BRD_", AP_BoardConfig),
 
     // EKF
+#if HAL_NAVEKF2_AVAILABLE
     GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+#endif
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
 
     // GCS
