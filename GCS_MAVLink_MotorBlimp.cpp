@@ -28,5 +28,9 @@ void GCS_MAVLINK_MotorBlimp::send_pid_tuning()
 
 uint8_t GCS_MAVLINK_MotorBlimp::send_available_mode(uint8_t index) const
 {
-    return 0;
+    // Report Manual mode
+    if (index > 1) {
+        return 0;
+    }
+    return 1;
 }

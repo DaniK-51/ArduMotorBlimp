@@ -3,6 +3,7 @@
 
 void GCS_MotorBlimp::update_vehicle_sensor_status_flags()
 {
+    // No sensors initialized yet — report nothing
 }
 
 uint32_t GCS_MotorBlimp::custom_mode() const

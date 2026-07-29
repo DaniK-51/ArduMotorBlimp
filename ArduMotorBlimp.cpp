@@ -22,8 +22,11 @@ void ArduMotorBlimp::init_ardupilot()
     // Skip arming checks for testing (no sensors initialized yet)
     AP_Param::set_by_name("ARMING_REQUIRE", 0);
 
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: init start");
+
     // RC
     rc().init();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: RC init done");
 
     // Motor output — bidirectional, ±1000 range
     SRV_Channels::set_angle(SRV_Channel::k_motor1, MOTOR_SCALE);
@@ -33,6 +36,9 @@ void ArduMotorBlimp::init_ardupilot()
 
     AP::srv().enable_aux_servos();
     SRV_Channels::update_aux_servo_function();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: motors init done");
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: ready");
 }
 
 void ArduMotorBlimp::load_parameters()
@@ -113,6 +119,10 @@ void ArduMotorBlimp::motors_output()
 
 void ArduMotorBlimp::one_hz_loop()
 {
+    if (arming.is_armed()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ARMED fwd=%.1f rll=%.1f pit=%.1f yaw=%.1f",
+                      rc_in.forward, rc_in.roll, rc_in.pitch, rc_in.yaw);
+    }
 }
 
 void ArduMotorBlimp::handle_battery_failsafe(const char* type_str, const int8_t action)
