@@ -33,8 +33,20 @@ GCS_PARAMS="$ARDUPILOT_ROOT/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp"
 if grep -q "APM_BUILD_ArduMotorBlimp" "$GCS_PARAMS"; then
     echo "[SKIP] ArduMotorBlimp streamrates already defined"
 else
-    # Add ArduMotorBlimp to the Blimp branch (same streamrates: all zero)
-    sed -i 's/APM_BUILD_TYPE(APM_BUILD_Blimp)/APM_BUILD_TYPE(APM_BUILD_Blimp) || APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)/' "$GCS_PARAMS"
+    # Insert a new branch BEFORE the Blimp branch with our custom rates
+    # This gives us: EXT_STAT=1 (SYS_STATUS, GPS), RC_CHAN=10, EXTRA1=10 (ATTITUDE)
+    sed -i '/^#elif APM_BUILD_COPTER_OR_HELI/i \
+#elif APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)\
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 1\
+#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 10\
+#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 10\
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0\
+#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0' "$GCS_PARAMS"
     echo "[DONE] Added ArduMotorBlimp streamrates to GCS_MAVLink_Parameters.cpp"
 fi
 
