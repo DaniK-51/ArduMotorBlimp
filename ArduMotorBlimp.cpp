@@ -19,6 +19,9 @@ ArduMotorBlimp::ArduMotorBlimp(void)
 
 void ArduMotorBlimp::init_ardupilot()
 {
+    // Skip arming checks for testing (no sensors initialized yet)
+    AP_Param::set_by_name("ARMING_REQUIRE", 0);
+
     // RC
     rc().init();
 
