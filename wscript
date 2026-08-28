@@ -5,7 +5,10 @@ def build(bld):
     bld.ap_stlib(
         name=vehicle + '_libs',
         ap_vehicle=vehicle,
-        ap_libraries=bld.ap_common_vehicle_libraries(),
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+            'AP_LTM_Telem',
+            'AP_Devo_Telem',
+        ],
     )
     bld.ap_program(
         program_name='ardumotorblimp',

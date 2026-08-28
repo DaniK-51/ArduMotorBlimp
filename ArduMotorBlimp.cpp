@@ -1,5 +1,9 @@
 #include "ArduMotorBlimp.h"
 
+#define FORCE_VERSION_H_INCLUDE
+#include "version.h"
+#undef FORCE_VERSION_H_INCLUDE
+
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) \
@@ -11,7 +15,18 @@ const AP_Scheduler::Task ArduMotorBlimp::scheduler_tasks[] = {
     SCHED_TASK(rc_loop,           100,    130,   3),
     SCHED_TASK(motors_output,     400,    100,   6),
     SCHED_TASK(one_hz_loop,         1,    100,   9),
+    SCHED_TASK_CLASS(GCS, (GCS*)&motorblimp._gcs, update_receive, 400, 180, 51),
+    SCHED_TASK_CLASS(GCS, (GCS*)&motorblimp._gcs, update_send,    400, 550, 54),
 };
+
+const struct LogStructure ArduMotorBlimp::log_structure[] = {
+    LOG_COMMON_STRUCTURES,
+};
+
+uint8_t ArduMotorBlimp::get_num_log_structures() const
+{
+    return ARRAY_SIZE(log_structure);
+}
 
 ArduMotorBlimp::ArduMotorBlimp(void)
 {
@@ -22,10 +37,26 @@ void ArduMotorBlimp::init_ardupilot()
     // Skip arming checks for testing (no sensors initialized yet)
     AP_Param::set_by_name("ARMING_REQUIRE", 0);
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: init start");
+    hal.console->printf("ArduMotorBlimp: init_ardupilot start\n");
+
+    // AHRS + INS — required for the scheduler loop (wait_for_sample)
+    ahrs.init();
+    ins.init(scheduler.get_loop_rate_hz());
+    ahrs.reset();
+
+    // Sensors needed by AP_Vehicle scheduler tasks (arming checks, etc.)
+    gps.init();
+    AP::compass().init();
+    barometer.init();
+
+    // GCS
+    gcs().setup_uarts();
+    hal.console->printf("ArduMotorBlimp: setup_uarts done\n");
+    gcs().update_send();
 
     // RC
     rc().init();
+    hal.console->printf("ArduMotorBlimp: rc init done\n");
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ArduMotorBlimp: RC init done");
 
     // Motor output — bidirectional, ±1000 range

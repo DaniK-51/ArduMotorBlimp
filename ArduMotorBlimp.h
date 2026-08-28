@@ -3,6 +3,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_RCMapper/AP_RCMapper.h>
 
 #include "config.h"
 #include "defines.h"
@@ -29,6 +30,12 @@ public:
                              uint32_t &log_bit) override;
 
     static const AP_Param::Info var_info[];
+    static const struct LogStructure log_structure[];
+
+    const struct LogStructure *get_log_structures() const override {
+        return log_structure;
+    }
+    uint8_t get_num_log_structures() const override;
 
 private:
     Parameters g;
@@ -49,6 +56,7 @@ private:
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
     AP_Arming_MotorBlimp arming;
+    RCMapper rcmap;
 
     AP_Param param_loader{var_info};
 
