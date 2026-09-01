@@ -1,56 +1,95 @@
-#!/bin/bash
-# patch-ardupilot.sh — Register ArduMotorBlimp in ArduPilot's build system.
-# Run from the ArduPilot root directory:
-#   ./ArduMotorBlimp/scripts/patch-ardupilot.sh
+#!/bin/sh
+# Apply the ArduMotorBlimp SITL integration to the exact ArduPilot revision it
+# was generated against. This script intentionally uses git apply instead of
+# platform-specific sed syntax.
 
-set -e
+set -eu
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ARDUPILOT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+EXPECTED_SHA="331c42a50c1f68b0065d4944e55eb688b62fe9c4"
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+MOTORBLIMP_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+PATCH_FILE="$MOTORBLIMP_ROOT/patches/ardupilot-331c42a.patch"
+
+usage()
+{
+    echo "Usage: $0 [ARDUPILOT_ROOT]" >&2
+    echo "If omitted, run from an ArduPilot root or keep ArduMotorBlimp inside it." >&2
+    exit 2
+}
+
+if [ "$#" -gt 1 ]; then
+    usage
+fi
+
+if [ "$#" -eq 1 ]; then
+    ARDUPILOT_ROOT=$1
+elif [ -f "./wscript" ] && [ -d "./libraries/AP_HAL_SITL" ]; then
+    ARDUPILOT_ROOT=.
+else
+    ARDUPILOT_ROOT="$MOTORBLIMP_ROOT/.."
+fi
+
+if [ ! -d "$ARDUPILOT_ROOT" ]; then
+    echo "ArduPilot root does not exist: $ARDUPILOT_ROOT" >&2
+    usage
+fi
+
+ARDUPILOT_ROOT=$(CDPATH= cd -- "$ARDUPILOT_ROOT" && pwd)
+
+if [ ! -f "$ARDUPILOT_ROOT/wscript" ] || [ ! -d "$ARDUPILOT_ROOT/libraries/AP_HAL_SITL" ]; then
+    echo "Not an ArduPilot checkout: $ARDUPILOT_ROOT" >&2
+    exit 1
+fi
+
+if [ ! -f "$PATCH_FILE" ]; then
+    echo "Missing pinned patch: $PATCH_FILE" >&2
+    exit 1
+fi
+
+ACTUAL_SHA=$(git -C "$ARDUPILOT_ROOT" rev-parse HEAD)
+if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+    echo "Unsupported ArduPilot revision." >&2
+    echo "Expected: $EXPECTED_SHA" >&2
+    echo "Actual:   $ACTUAL_SHA" >&2
+    exit 1
+fi
 
 echo "ArduPilot root: $ARDUPILOT_ROOT"
+echo "ArduPilot SHA:  $ACTUAL_SHA"
 
-# --- 1. wscript: add 'motorblimp' to vehicles list ---
-WSCRIPT="$ARDUPILOT_ROOT/wscript"
-if grep -q "'motorblimp'" "$WSCRIPT"; then
-    echo "[SKIP] 'motorblimp' already in wscript vehicles list"
+if git -C "$ARDUPILOT_ROOT" apply --reverse --check "$PATCH_FILE" >/dev/null 2>&1; then
+    echo "SITL patch is already applied."
 else
-    sed -i "s/vehicles = \['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub'\]/vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'motorblimp', 'plane', 'rover', 'sub']/" "$WSCRIPT"
-    echo "[DONE] Added 'motorblimp' to wscript vehicles list"
+    if ! git -C "$ARDUPILOT_ROOT" apply --check "$PATCH_FILE"; then
+        echo "Patch cannot be applied cleanly. The checkout may be partially patched" >&2
+        echo "or contain overlapping local changes." >&2
+        exit 1
+    fi
+    git -C "$ARDUPILOT_ROOT" apply "$PATCH_FILE"
+    echo "Applied $(basename "$PATCH_FILE")."
 fi
 
-# --- 2. AP_Vehicle_Type.h: add APM_BUILD_ArduMotorBlimp ---
-VTYPE="$ARDUPILOT_ROOT/libraries/AP_Vehicle/AP_Vehicle_Type.h"
-if grep -q "APM_BUILD_ArduMotorBlimp" "$VTYPE"; then
-    echo "[SKIP] APM_BUILD_ArduMotorBlimp already defined"
-else
-    sed -i '/#define APM_BUILD_Heli       13/a #define APM_BUILD_ArduMotorBlimp  14' "$VTYPE"
-    echo "[DONE] Added APM_BUILD_ArduMotorBlimp to AP_Vehicle_Type.h"
+# Detect accidental drift between the canonical source files and the copies
+# embedded in the generated ArduPilot patch.
+if ! cmp -s "$MOTORBLIMP_ROOT/sitl/SIM_MotorBlimp.h" \
+          "$ARDUPILOT_ROOT/libraries/SITL/SIM_MotorBlimp.h"; then
+    echo "Patched SIM_MotorBlimp.h differs from sitl/SIM_MotorBlimp.h" >&2
+    exit 1
+fi
+if ! cmp -s "$MOTORBLIMP_ROOT/sitl/SIM_MotorBlimp.cpp" \
+          "$ARDUPILOT_ROOT/libraries/SITL/SIM_MotorBlimp.cpp"; then
+    echo "Patched SIM_MotorBlimp.cpp differs from sitl/SIM_MotorBlimp.cpp" >&2
+    exit 1
+fi
+if ! cmp -s "$MOTORBLIMP_ROOT/sitl/motorblimp.parm" \
+          "$ARDUPILOT_ROOT/Tools/autotest/default_params/motorblimp.parm"; then
+    echo "Patched motorblimp.parm differs from sitl/motorblimp.parm" >&2
+    exit 1
 fi
 
-# --- 3. GCS_MAVLink_Parameters.cpp: add streamrates for ArduMotorBlimp ---
-GCS_PARAMS="$ARDUPILOT_ROOT/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp"
-if grep -q "APM_BUILD_ArduMotorBlimp" "$GCS_PARAMS"; then
-    echo "[SKIP] ArduMotorBlimp streamrates already defined"
-else
-    # Insert a new branch BEFORE the Blimp branch with our custom rates
-    # This gives us: EXT_STAT=1 (SYS_STATUS, GPS), RC_CHAN=10, EXTRA1=10 (ATTITUDE)
-    sed -i '/^#elif APM_BUILD_COPTER_OR_HELI/i \
-#elif APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)\
-#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 1\
-#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 10\
-#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 10\
-#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0\
-#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0' "$GCS_PARAMS"
-    echo "[DONE] Added ArduMotorBlimp streamrates to GCS_MAVLink_Parameters.cpp"
-fi
-
-echo ""
-echo "Patch applied. Build with:"
+echo "SITL overlay verified. Build with:"
 echo "  ./waf configure --board sitl"
-echo "  ./waf motorblimp"
+echo "  ./waf build --target bin/ardumotorblimp"
+echo "Run with:"
+echo "  ./Tools/autotest/sim_vehicle.py -v ArduMotorBlimp -f motorblimp -w --console"

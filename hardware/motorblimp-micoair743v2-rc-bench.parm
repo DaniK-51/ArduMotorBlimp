@@ -1,0 +1,23 @@
+# Safe RC-only first-bench parameters for MicoAir743v2-AIO-35A.
+# This file intentionally does not enable DShot or reversible ESC mode.
+# Resolve and validate the ESC firmware gate in README-HARDWARE.md first.
+
+SERIAL6_PROTOCOL 23
+SERIAL6_OPTIONS 0
+RC_PROTOCOLS 512
+RC_OPTIONS 8224
+RC_FS_TIMEOUT 1.0
+
+RCMAP_ROLL 1
+RCMAP_PITCH 2
+RCMAP_THROTTLE 3
+RCMAP_YAW 4
+
+RC5_OPTION 153
+RC6_OPTION 31
+
+MAN_FWD_MAX 0.10
+
+# MicoAir743v2-AIO-35A integrated current-sensor factor. Verify later
+# against an external power meter on the assembled power train.
+BATT_AMP_PERVLT 14.14
