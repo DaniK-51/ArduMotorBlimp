@@ -29,6 +29,8 @@ public:
     struct AttitudeTarget {
         Quaternion attitude_body_to_ned;
         float collective = 0.0f;
+        float yaw_rate_target_rads = 0.0f;
+        bool use_yaw_rate = false;
         bool valid = false;
     };
 
@@ -87,7 +89,7 @@ public:
                           bool clear_position_target = false);
 
     // Stabilised manual target: roll/pitch sticks command angles, yaw commands
-    // a rate integrated into an absolute heading, and collective remains signed.
+    // body rate directly, and collective remains signed.
     bool build_manual_target(const ManualInput &input,
                              const Quaternion &current_attitude_body_to_ned,
                              float dt,
@@ -140,8 +142,6 @@ private:
 
     ParametersG2 &_params;
 
-    float _manual_yaw_target_rad = 0.0f;
-    bool _manual_target_initialised = false;
     bool _last_rate_output_limited = false;
 
     Vector3f _position_target_ned_m;

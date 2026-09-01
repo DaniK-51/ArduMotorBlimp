@@ -74,7 +74,7 @@ MAV_STATE GCS_MAVLINK_MotorBlimp::vehicle_system_status() const
     bool critical = AP::battery().has_failsafed();
     switch (mode) {
     case Mode::MANUAL:
-        critical |= rc().in_rc_failsafe() || !attitude_ok || !yaw_ok;
+        critical |= rc().in_rc_failsafe() || !attitude_ok;
         break;
     case Mode::HOLD:
         critical |= !attitude_ok || !yaw_ok;

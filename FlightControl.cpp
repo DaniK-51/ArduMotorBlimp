@@ -211,14 +211,6 @@ void FlightControl::reset(const Quaternion &current_attitude_body_to_ned)
 {
     reset_rate_controllers();
     reset_navigation(current_attitude_body_to_ned, false);
-
-    _manual_target_initialised = quaternion_is_valid(current_attitude_body_to_ned);
-    if (_manual_target_initialised) {
-        _manual_yaw_target_rad =
-            normalised_quaternion(current_attitude_body_to_ned).get_euler_yaw();
-    } else {
-        _manual_yaw_target_rad = 0.0f;
-    }
 }
 
 bool FlightControl::build_manual_target(
@@ -234,12 +226,6 @@ bool FlightControl::build_manual_target(
         return false;
     }
 
-    if (!_manual_target_initialised) {
-        _manual_yaw_target_rad =
-            normalised_quaternion(current_attitude_body_to_ned).get_euler_yaw();
-        _manual_target_initialised = true;
-    }
-
     const float roll_limit = radians(constrain_float(
         fabsf(_params.manual_roll_max_deg.get()), 0.0f, 85.0f));
     const float pitch_limit = radians(constrain_float(
@@ -249,18 +235,24 @@ bool FlightControl::build_manual_target(
 
     const float roll_target = bounded_unit_input(input.roll) * roll_limit;
     const float pitch_target = bounded_unit_input(input.pitch) * pitch_limit;
-    _manual_yaw_target_rad = wrap_PI(
-        _manual_yaw_target_rad +
-        bounded_unit_input(input.yaw) * yaw_rate_limit * control_dt);
+    // Reuse the current yaw only as the frame for the roll/pitch target.  It
+    // is rebuilt every cycle, so gyro drift or an estimator yaw reset cannot
+    // turn into an absolute-heading error in MANUAL.
+    const float current_yaw = normalised_quaternion(
+        current_attitude_body_to_ned).get_euler_yaw();
 
     target.attitude_body_to_ned.from_euler(roll_target,
                                             pitch_target,
-                                            _manual_yaw_target_rad);
+                                            current_yaw);
     target.attitude_body_to_ned.normalize();
     target.collective = bounded_unit_input(input.collective) *
         constrain_float(fabsf(_params.manual_collective_max.get()), 0.0f, 1.0f);
+    target.yaw_rate_target_rads =
+        bounded_unit_input(input.yaw) * yaw_rate_limit;
+    target.use_yaw_rate = true;
     target.valid = quaternion_is_valid(target.attitude_body_to_ned) &&
-                   std::isfinite(target.collective);
+                   std::isfinite(target.collective) &&
+                   std::isfinite(target.yaw_rate_target_rads);
     return target.valid;
 }
 
@@ -277,7 +269,8 @@ FlightControl::AttitudeControlOutput FlightControl::update_attitude(
         !quaternion_is_valid(target.attitude_body_to_ned) ||
         !quaternion_is_valid(current_attitude_body_to_ned) ||
         !vector_is_finite(gyro_body_rads) ||
-        !std::isfinite(target.collective)) {
+        !std::isfinite(target.collective) ||
+        (target.use_yaw_rate && !std::isfinite(target.yaw_rate_target_rads))) {
         return output;
     }
 
@@ -287,8 +280,13 @@ FlightControl::AttitudeControlOutput FlightControl::update_attitude(
         MAX(_params.att_angle_roll_p.get(), 0.0f);
     output.rate_target_rads.y = output.attitude_error_rad.y *
         MAX(_params.att_angle_pitch_p.get(), 0.0f);
-    output.rate_target_rads.z = output.attitude_error_rad.z *
-        MAX(_params.att_angle_yaw_p.get(), 0.0f);
+    if (target.use_yaw_rate) {
+        output.attitude_error_rad.z = 0.0f;
+        output.rate_target_rads.z = target.yaw_rate_target_rads;
+    } else {
+        output.rate_target_rads.z = output.attitude_error_rad.z *
+            MAX(_params.att_angle_yaw_p.get(), 0.0f);
+    }
 
     const Vector3f rate_limit_rads {
         radians(MAX(_params.att_rate_roll_max_dps.get(), 0.0f)),

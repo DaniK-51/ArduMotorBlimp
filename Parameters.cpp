@@ -247,7 +247,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: MAN_YAW_RATE
     // @DisplayName: Manual maximum yaw rate
-    // @Description: Maximum heading-target slew rate commanded by the manual yaw stick
+    // @Description: Maximum body yaw-rate commanded directly by the manual yaw stick
     // @Units: deg/s
     // @Range: 0 180
     // @User: Standard

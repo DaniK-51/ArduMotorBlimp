@@ -21,5 +21,6 @@ public:
 
 protected:
     bool pre_arm_checks(bool report) override;
+    bool compass_checks(bool report) override;
     bool gps_checks(bool report) override;
 };

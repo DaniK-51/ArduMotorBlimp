@@ -3,8 +3,9 @@
 `test_motorblimp_control.cpp` exercises the production `MotorMixer.cpp` and
 `FlightControl.cpp` against the ArduPilot 4.7 SITL libraries.  It covers the
 canonical motor signs, allocator saturation, invalid input handling, quaternion
-attitude error, manual compass-heading hold, NED guidance, pitch limiting,
-forward/reverse hysteresis, and waypoint acceptance.
+attitude error, compass-independent MANUAL body-yaw-rate control, mode compass
+requirements, NED guidance, pitch limiting, forward/reverse hysteresis, and
+waypoint acceptance.
 
 From this repository, run:
 
@@ -40,3 +41,12 @@ python3 tests/sitl_auto.py \
 thrust climb against `SIM_STATE` truth, clears a persistent target on disarm,
 and injects loss of the sole UWB backend. The loss gate requires motor neutral
 within 0.5 seconds and matching CRITICAL/SYS_STATUS telemetry.
+
+The normal smoke mixer session cold-starts with all simulated magnetometers
+returning no data while `COMPASS_USE=1`; EKF yaw is explicitly unaided. It arms
+through the ordinary MANUAL pre-arm path, requires `MAV_STATE_ACTIVE`, rejects
+`HOLD=4`, `AUTO=10`, and `GUIDED=15` specifically because their heading
+control requires a compass, and proves that the MANUAL yaw stick still
+produces the expected motor differential and positive body yaw rate. A second
+session proves those modes also remain blocked when the magnetometer frontend
+is healthy but `EK3_SRC1_YAW=0` leaves the active EKF yaw unaided.

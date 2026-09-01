@@ -18,21 +18,41 @@ bool AP_Arming_MotorBlimp::gps_checks(const bool report)
     return true;
 }
 
+bool AP_Arming_MotorBlimp::compass_checks(const bool report)
+{
+    const Mode mode = static_cast<Mode>(motorblimp.get_mode());
+    if (!mode_requires_compass(mode)) {
+#if COMPASS_CAL_ENABLED
+        Compass &vehicle_compass = AP::compass();
+        if (vehicle_compass.is_calibrating()) {
+            check_failed(report, "Compass calibration running");
+            return false;
+        }
+        if (vehicle_compass.compass_cal_requires_reboot()) {
+            check_failed(report, "Compass calibrated requires reboot");
+            return false;
+        }
+#endif
+        return true;
+    }
+
+    if (!AP_Arming::compass_checks(report)) {
+        return false;
+    }
+    if (!motorblimp.compass_healthy()) {
+        check_failed(Check::COMPASS, report,
+                     "Compass unavailable/not used for yaw");
+        return false;
+    }
+    return true;
+}
+
 bool AP_Arming_MotorBlimp::pre_arm_checks(bool report)
 {
     bool passed = AP_Arming::pre_arm_checks(report);
 
     if (!motorblimp.attitude_healthy()) {
         check_failed(Check::INS, report, "Attitude estimate invalid");
-        passed = false;
-    }
-
-    // Every implemented mode closes an absolute yaw loop.  Generic ArduPilot
-    // compass checks permit COMPASS_USE=0, but that configuration cannot fly
-    // this controller and would otherwise arm only to remain motor-neutral.
-    if (!motorblimp.compass_healthy()) {
-        check_failed(Check::COMPASS, report,
-                     "Compass unavailable/not used for yaw");
         passed = false;
     }
 

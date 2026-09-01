@@ -147,6 +147,19 @@ index a3b4e8c..4a4541e 100644
  
  
 -
+diff --git a/libraries/AP_Arming/AP_Arming.h b/libraries/AP_Arming/AP_Arming.h
+index a560140..e7ac3ed 100644
+--- a/libraries/AP_Arming/AP_Arming.h
++++ b/libraries/AP_Arming/AP_Arming.h
+@@ -205,7 +205,7 @@ protected:
+     virtual bool ins_checks(bool report);
+ #endif
+ 
+-    bool compass_checks(bool report);
++    virtual bool compass_checks(bool report);
+ 
+     virtual bool gps_checks(bool report);
+ 
 diff --git a/libraries/AP_Beacon/AP_Beacon.cpp b/libraries/AP_Beacon/AP_Beacon.cpp
 index 4713b95..4ff825b 100644
 --- a/libraries/AP_Beacon/AP_Beacon.cpp

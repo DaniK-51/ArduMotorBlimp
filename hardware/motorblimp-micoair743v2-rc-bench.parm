@@ -18,6 +18,10 @@ RC6_OPTION 31
 
 MAN_FWD_MAX 0.10
 
+# Manual-only bench setup: yaw is unaided and will drift. Change this to 1,
+# calibrate the external compass and reboot before HOLD/AUTO/GUIDED.
+EK3_SRC1_YAW 0
+
 # MicoAir743v2-AIO-35A integrated current-sensor factor. Verify later
 # against an external power meter on the assembled power train.
 BATT_AMP_PERVLT 14.14

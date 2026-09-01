@@ -54,6 +54,12 @@ python3 ArduMotorBlimp/tests/sitl_smoke.py \
 The default gate uses normal arming (no force-arm bypass) and verifies the
 airship heartbeat, neutral/reverse PWM convention, four-axis mixer signs,
 forward motion, and positive roll/pitch/yaw response using `SIM_STATE` truth.
+Its mixer session cold-starts with all three simulated magnetometers returning
+no data while `COMPASS_USE=1` and EKF yaw is unaided. It normally arms in
+`MANUAL`, verifies direct gyro yaw-rate control, and confirms that
+`HOLD/AUTO/GUIDED` remain rejected. A separate session keeps the magnetometer
+frontend healthy but selects `EK3_SRC1_YAW=0`; the same modes must still be
+rejected because the active EKF is not using that sensor for heading.
 
 Run the automatic-navigation gate with:
 

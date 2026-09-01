@@ -10,6 +10,15 @@ enum class Mode : uint8_t {
     GUIDED = 15,
 };
 
+// MANUAL closes only roll/pitch attitude and body-rate loops.  Every other
+// mode holds or navigates against an absolute heading and therefore needs a
+// healthy compass.  Defaulting new modes to requiring a compass is the safe
+// behaviour.
+constexpr bool mode_requires_compass(Mode mode)
+{
+    return mode != Mode::MANUAL;
+}
+
 // Keep the conventional ArduPilot log bit assignments so Mission Planner,
 // MAVExplorer and scheduler performance logging interpret LOG_BITMASK in the
 // usual way.

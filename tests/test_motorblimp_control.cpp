@@ -7,6 +7,7 @@
 
 #include "FlightControl.h"
 #include "MotorMixer.h"
+#include "defines.h"
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -111,6 +112,15 @@ FlightControl::NavigationState navigation_state(
 }
 
 } // namespace
+
+static_assert(!mode_requires_compass(Mode::MANUAL),
+              "MANUAL must allow gyro-only yaw control");
+static_assert(mode_requires_compass(Mode::HOLD),
+              "HOLD must retain an absolute heading source");
+static_assert(mode_requires_compass(Mode::AUTO),
+              "AUTO must retain an absolute heading source");
+static_assert(mode_requires_compass(Mode::GUIDED),
+              "GUIDED must retain an absolute heading source");
 
 TEST(MotorMixer, CanonicalAxisSigns)
 {
@@ -258,9 +268,11 @@ TEST(FlightControl, QuaternionErrorUsesBodyAxesAndShortestRotation)
         FlightControl::quaternion_error_body(current, target), error);
 }
 
-TEST(FlightControl, ManualCentredYawHoldsInitialCompassHeading)
+TEST(FlightControl, ManualYawStickCommandsBodyRateWithoutHeadingHold)
 {
-    ParametersG2 params;
+    // ParametersG2 is a static vehicle object in production.  Keep the same
+    // zero-initialisation guarantee here for its embedded AC_PID objects.
+    static ParametersG2 params;
     configure_controller_parameters(params);
     FlightControl controller(params);
 
@@ -270,30 +282,95 @@ TEST(FlightControl, ManualCentredYawHoldsInitialCompassHeading)
 
     FlightControl::AttitudeTarget target;
     FlightControl::ManualInput input;
+    input.yaw = 0.5f;
     ASSERT_TRUE(controller.build_manual_target(input, initial, 0.02f, target));
+    EXPECT_TRUE(target.use_yaw_rate);
+    EXPECT_NEAR(target.yaw_rate_target_rads, radians(30.0f), EPSILON);
     EXPECT_NEAR(target.attitude_body_to_ned.get_euler_yaw(),
                 radians(40.0f), EPSILON);
 
-    // Heading feedback may move, but a centred yaw stick retains the latched
-    // compass heading rather than following the measured heading.
+    FlightControl::AttitudeControlOutput control = controller.update_attitude(
+        target, initial, Vector3f {}, 0.02f);
+    ASSERT_TRUE(control.valid);
+    EXPECT_NEAR(control.rate_target_rads.z, radians(30.0f), EPSILON);
+
+    // The same stick position commands the same body rate after the estimated
+    // heading changes.  MANUAL follows the current yaw for its roll/pitch
+    // attitude target instead of retaining an absolute compass heading.
     const Quaternion disturbed =
-        attitude_from_euler(0.0f, 0.0f, radians(10.0f));
-    ASSERT_TRUE(controller.build_manual_target(input, disturbed, 0.02f, target));
+        attitude_from_euler(0.0f, 0.0f, radians(-70.0f));
+    ASSERT_TRUE(controller.build_manual_target(input, disturbed, 0.1f, target));
+    EXPECT_TRUE(target.use_yaw_rate);
+    EXPECT_NEAR(target.yaw_rate_target_rads, radians(30.0f), EPSILON);
     EXPECT_NEAR(target.attitude_body_to_ned.get_euler_yaw(),
-                radians(40.0f), EPSILON);
+                radians(-70.0f), EPSILON);
+
+    control = controller.update_attitude(target, disturbed, Vector3f {}, 0.1f);
+    ASSERT_TRUE(control.valid);
+    EXPECT_NEAR(control.rate_target_rads.z, radians(30.0f), EPSILON);
 
     input.roll = 0.5f;
     input.pitch = -0.5f;
-    input.yaw = 1.0f;
+    input.yaw = 0.0f;
     input.collective = -0.5f;
     ASSERT_TRUE(controller.build_manual_target(input, disturbed, 0.1f, target));
+    EXPECT_TRUE(target.use_yaw_rate);
+    EXPECT_NEAR(target.yaw_rate_target_rads, 0.0f, EPSILON);
     EXPECT_NEAR(target.attitude_body_to_ned.get_euler_roll(),
                 radians(15.0f), EPSILON);
     EXPECT_NEAR(target.attitude_body_to_ned.get_euler_pitch(),
                 radians(-30.0f), EPSILON);
     EXPECT_NEAR(target.attitude_body_to_ned.get_euler_yaw(),
-                radians(46.0f), EPSILON);
+                radians(-70.0f), EPSILON);
     EXPECT_NEAR(target.collective, -0.4f, EPSILON);
+
+    control = controller.update_attitude(target, disturbed, Vector3f {}, 0.1f);
+    ASSERT_TRUE(control.valid);
+    EXPECT_NEAR(control.rate_target_rads.z, 0.0f, EPSILON);
+}
+
+TEST(FlightControl, ManualRollPitchControlIsIndependentOfDriftingYaw)
+{
+    static ParametersG2 params;
+    configure_controller_parameters(params);
+    FlightControl controller(params);
+
+    const Quaternion first_attitude = attitude_from_euler(
+        radians(5.0f), radians(-10.0f), radians(40.0f));
+    const Quaternion second_attitude = attitude_from_euler(
+        radians(5.0f), radians(-10.0f), radians(-70.0f));
+    const FlightControl::ManualInput input {
+        0.2f, 0.5f, -0.5f, 0.5f
+    };
+
+    FlightControl::AttitudeTarget first_target;
+    ASSERT_TRUE(controller.build_manual_target(
+        input, first_attitude, 0.02f, first_target));
+    const FlightControl::AttitudeControlOutput first_control =
+        controller.update_attitude(
+            first_target, first_attitude, Vector3f {}, 0.02f);
+    ASSERT_TRUE(first_control.valid);
+
+    FlightControl::AttitudeTarget second_target;
+    ASSERT_TRUE(controller.build_manual_target(
+        input, second_attitude, 0.02f, second_target));
+    const FlightControl::AttitudeControlOutput second_control =
+        controller.update_attitude(
+            second_target, second_attitude, Vector3f {}, 0.02f);
+    ASSERT_TRUE(second_control.valid);
+
+    EXPECT_NEAR(first_control.attitude_error_rad.x,
+                second_control.attitude_error_rad.x, EPSILON);
+    EXPECT_NEAR(first_control.attitude_error_rad.y,
+                second_control.attitude_error_rad.y, EPSILON);
+    EXPECT_NEAR(first_control.rate_target_rads.x,
+                second_control.rate_target_rads.x, EPSILON);
+    EXPECT_NEAR(first_control.rate_target_rads.y,
+                second_control.rate_target_rads.y, EPSILON);
+    EXPECT_NEAR(first_control.rate_target_rads.z,
+                radians(30.0f), EPSILON);
+    EXPECT_NEAR(second_control.rate_target_rads.z,
+                radians(30.0f), EPSILON);
 }
 
 TEST(FlightControl, ManualRejectsInvalidInputAndTimeStep)

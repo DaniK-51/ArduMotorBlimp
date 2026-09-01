@@ -24,6 +24,8 @@ except ImportError as exc:  # pragma: no cover - depends on the CI image
 NEUTRAL_PWM = 1500
 PWM_UNCHANGED = 65535
 MOTOR_FIELDS = ("servo1_raw", "servo2_raw", "servo3_raw", "servo4_raw")
+MANUAL_MODE = 0
+COMPASS_REQUIRED_MODES = (("HOLD", 4), ("AUTO", 10), ("GUIDED", 15))
 # Average motor PWM cancels attitude differentials, so this threshold detects
 # genuine longitudinal collective while tolerating telemetry quantisation.
 GUIDED_COLLECTIVE_DETECTION_PWM = 40.0
@@ -430,6 +432,7 @@ class SITLSession:
         state = None
         rc_channels = None
         heartbeat = None
+        sys_status = None
         status_texts: List[str] = []
         states: List[object] = []
         local_positions: List[object] = []
@@ -450,6 +453,7 @@ class SITLSession:
                     "RC_CHANNELS",
                     "LOCAL_POSITION_NED",
                     "HEARTBEAT",
+                    "SYS_STATUS",
                     "STATUSTEXT",
                 ],
                 blocking=True,
@@ -470,6 +474,8 @@ class SITLSession:
                 local_positions.append(message)
             elif message.get_type() == "HEARTBEAT":
                 heartbeat = message
+            elif message.get_type() == "SYS_STATUS":
+                sys_status = message
             elif message.get_type() == "STATUSTEXT":
                 status_texts.append(str(message.text))
 
@@ -479,6 +485,7 @@ class SITLSession:
             "states": states,
             "rc_channels": rc_channels,
             "heartbeat": heartbeat,
+            "sys_status": sys_status,
             "status_texts": status_texts,
             "local_positions": local_positions,
             "servo_samples": servo_samples,
@@ -635,6 +642,167 @@ def motor_pwm(servo_message) -> Tuple[int, int, int, int]:
     return tuple(int(getattr(servo_message, field)) for field in MOTOR_FIELDS)
 
 
+def find_compass_use_parameter(session: SITLSession) -> Tuple[str, float]:
+    """Return the compass-for-yaw parameter used by this ArduPilot build."""
+
+    errors = []
+    for name in ("COMPASS_USE", "COMPASS_USE1"):
+        try:
+            return name, session.read_parameter(name, timeout=1.0)
+        except SmokeFailure as exc:
+            errors.append(str(exc))
+    raise SmokeFailure(
+        "neither COMPASS_USE nor COMPASS_USE1 is registered "
+        f"({'; '.join(errors)})"
+    )
+
+
+def write_manual_no_compass_defaults(source: Path, destination: Path) -> None:
+    """Create a cold-start profile with no usable simulated magnetometer."""
+
+    overrides = """
+
+# MANUAL no-compass regression profile.  Keep COMPASS_USE enabled so normal
+# AP_Arming compass health checks would reject the failed sensor unless the
+# vehicle-specific MANUAL policy is active.  EKF yaw is deliberately unaided.
+SIM_MAG1_FAIL 1
+SIM_MAG2_FAIL 1
+SIM_MAG3_FAIL 1
+COMPASS_USE 1
+EK3_SRC1_YAW 0
+"""
+    destination.write_text(
+        source.read_text(encoding="utf-8") + overrides,
+        encoding="utf-8",
+    )
+
+
+def write_manual_unaided_yaw_defaults(source: Path, destination: Path) -> None:
+    """Create a profile with healthy compasses not selected by EKF yaw."""
+
+    overrides = """
+
+# The magnetometers remain healthy, but the active EKF yaw source is None.
+# Compass-required modes must check estimator use, not only sensor health.
+COMPASS_USE 1
+EK3_SRC1_YAW 0
+"""
+    destination.write_text(
+        source.read_text(encoding="utf-8") + overrides,
+        encoding="utf-8",
+    )
+
+
+def assert_mode_rejected_for_compass(
+    session: SITLSession,
+    label: str,
+    requested_mode: int,
+    timeout: float = 4.0,
+) -> None:
+    """Require a compass-specific mode rejection while MANUAL stays active."""
+
+    deadline = time.monotonic() + timeout
+    next_command = 0.0
+    last_mode = None
+    last_status_text = "<none>"
+    compass_rejection_seen = False
+    manual_active_samples = 0
+    armed_flag = mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
+
+    # Do not let a delayed rejection from the preceding mode satisfy this
+    # mode's compass-specific reason check.
+    while session.master.recv_match(type="STATUSTEXT", blocking=False) is not None:
+        pass
+
+    while time.monotonic() < deadline:
+        session._check_process()
+        now = time.monotonic()
+        if now >= next_command:
+            session.master.mav.command_long_send(
+                session.target_system,
+                session.target_component,
+                mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                0,
+                mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                requested_mode,
+                0,
+                0,
+                0,
+                0,
+                0,
+            )
+            next_command = now + 1.0
+        session.send_override((NEUTRAL_PWM,) * 4)
+
+        message = session.master.recv_match(
+            type=["HEARTBEAT", "STATUSTEXT"], blocking=True, timeout=0.2
+        )
+        if message is None:
+            continue
+        if message.get_type() == "STATUSTEXT":
+            last_status_text = str(message.text)
+            text = last_status_text.lower()
+            compass_rejection_seen |= "compass" in text and "reject" in text
+            continue
+
+        last_mode = int(message.custom_mode)
+        if last_mode == requested_mode:
+            raise SmokeFailure(
+                f"{label} was accepted while compass yaw use was disabled"
+            )
+        if (
+            last_mode == MANUAL_MODE
+            and message.base_mode & armed_flag
+            and int(message.system_status) == mavutil.mavlink.MAV_STATE_ACTIVE
+        ):
+            manual_active_samples += 1
+        else:
+            manual_active_samples = 0
+
+        if compass_rejection_seen and manual_active_samples >= 2:
+            print(
+                f"  {label} rejected without compass; MANUAL remains ACTIVE",
+                flush=True,
+            )
+            return
+
+    raise SmokeFailure(
+        f"{label} was not rejected specifically because of the compass "
+        f"(last mode={last_mode}, last STATUSTEXT={last_status_text!r}, "
+        f"compass rejection={compass_rejection_seen}, "
+        f"MANUAL ACTIVE samples={manual_active_samples})"
+    )
+
+
+def wait_for_magnetometer_health(
+    session: SITLSession,
+    timeout: float = 5.0,
+):
+    """Return SYS_STATUS proving that the physical mag frontend is healthy."""
+
+    magnetometer_mask = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG
+    deadline = time.monotonic() + timeout
+    last_status = None
+    while time.monotonic() < deadline:
+        telemetry = session.collect(0.4, (NEUTRAL_PWM,) * 4)
+        last_status = telemetry["sys_status"]
+        if last_status is None:
+            continue
+        present = int(last_status.onboard_control_sensors_present)
+        enabled = int(last_status.onboard_control_sensors_enabled)
+        healthy = int(last_status.onboard_control_sensors_health)
+        if (
+            present & magnetometer_mask
+            and enabled & magnetometer_mask
+            and healthy & magnetometer_mask
+        ):
+            return last_status
+    raise SmokeFailure(
+        "magnetometer frontend did not report healthy in SYS_STATUS "
+        f"(last={last_status})"
+    )
+
+
 def input_diagnostics(telemetry: Dict[str, object]) -> str:
     rc_channels = telemetry["rc_channels"]
     if rc_channels is None:
@@ -691,10 +859,11 @@ def run_in_session(
     root: Path,
     port: int,
     callback,
+    defaults: Optional[Path] = None,
 ) -> None:
     session = SITLSession(
         args.binary,
-        args.defaults,
+        defaults if defaults is not None else args.defaults,
         root / label,
         port,
         args.home,
@@ -707,6 +876,40 @@ def run_in_session(
         raise SmokeFailure(f"{label}: {exc}\n--- SITL log ---\n{session.log_tail()}") from exc
     finally:
         session.stop()
+
+
+def test_healthy_compass_without_yaw_aiding(session: SITLSession) -> None:
+    """Reject heading modes when the EKF does not use a healthy compass."""
+
+    compass_parameter, compass_use = find_compass_use_parameter(session)
+    yaw_source = session.read_parameter("EK3_SRC1_YAW")
+    mag_failures = tuple(
+        session.read_parameter(f"SIM_MAG{index}_FAIL") for index in range(1, 4)
+    )
+    if abs(compass_use - 1.0) > 1.0e-3 or abs(yaw_source) > 1.0e-3:
+        raise SmokeFailure(
+            "invalid unaided-yaw profile "
+            f"({compass_parameter}={compass_use}, EK3_SRC1_YAW={yaw_source})"
+        )
+    if any(abs(value) > 1.0e-3 for value in mag_failures):
+        raise SmokeFailure(
+            f"unaided-yaw profile unexpectedly failed a magnetometer {mag_failures}"
+        )
+
+    status = wait_for_magnetometer_health(session)
+    yaw_position_mask = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_YAW_POSITION
+    if int(status.onboard_control_sensors_enabled) & yaw_position_mask:
+        raise SmokeFailure("MANUAL incorrectly reports yaw-position control enabled")
+    if int(status.onboard_control_sensors_health) & yaw_position_mask:
+        raise SmokeFailure("MANUAL incorrectly reports yaw-position control healthy")
+    print(
+        "  physical magnetometer healthy, EKF yaw unaided, "
+        "MANUAL yaw-position telemetry disabled",
+        flush=True,
+    )
+
+    for label, requested_mode in COMPASS_REQUIRED_MODES:
+        assert_mode_rejected_for_compass(session, label, requested_mode)
 
 
 def test_mixer(session: SITLSession, command_pwm: int) -> None:
@@ -727,6 +930,51 @@ def test_mixer(session: SITLSession, command_pwm: int) -> None:
         )
 
     neutral = (NEUTRAL_PWM,) * 4
+
+    # session.start() has already exercised the ordinary pre-arm path from a
+    # cold boot.  The profile keeps compass use enabled but supplies no data,
+    # while EKF yaw remains gyro-only.
+    compass_parameter, compass_use = find_compass_use_parameter(session)
+    mag_failures = tuple(
+        session.read_parameter(f"SIM_MAG{index}_FAIL") for index in range(1, 4)
+    )
+    yaw_source = session.read_parameter("EK3_SRC1_YAW")
+    if abs(compass_use - 1.0) > 1.0e-3:
+        raise SmokeFailure(
+            f"{compass_parameter} is not enabled in the no-compass profile "
+            f"({compass_use})"
+        )
+    if (
+        any(abs(value - 1.0) > 1.0e-3 for value in mag_failures)
+        or abs(yaw_source) > 1.0e-3
+    ):
+        raise SmokeFailure(
+            "invalid no-compass profile "
+            f"(SIM_MAG failures={mag_failures}, EK3_SRC1_YAW={yaw_source})"
+        )
+    telemetry = session.collect(0.8, neutral)
+    heartbeat = telemetry["heartbeat"]
+    if heartbeat is None:
+        raise SmokeFailure("no heartbeat after compass-failed MANUAL arm")
+    if int(heartbeat.custom_mode) != MANUAL_MODE:
+        raise SmokeFailure(
+            "compass-failed arm did not remain in MANUAL "
+            f"(custom_mode={heartbeat.custom_mode})"
+        )
+    if int(heartbeat.system_status) != mavutil.mavlink.MAV_STATE_ACTIVE:
+        raise SmokeFailure(
+            "compass-failed MANUAL is not MAV_STATE_ACTIVE "
+            f"(system_status={heartbeat.system_status})"
+        )
+    print(
+        "  MANUAL cold-start armed ACTIVE with failed compass, "
+        f"{compass_parameter}=1 and EK3_SRC1_YAW=0",
+        flush=True,
+    )
+
+    for label, requested_mode in COMPASS_REQUIRED_MODES:
+        assert_mode_rejected_for_compass(session, label, requested_mode)
+
     telemetry = session.collect(1.0, neutral)
     if telemetry["state"] is None:
         raise SmokeFailure("SIM_STATE was not received")
@@ -748,22 +996,49 @@ def test_mixer(session: SITLSession, command_pwm: int) -> None:
         # Once the linear model has begun moving, the closed-loop attitude
         # controller legitimately adds modest cross-axis corrections to
         # nominally-zero mixer terms.  Active-axis signs remain strict.
-        active_threshold = 50 if label == "yaw" else 80
-        assert_pattern(
-            label,
-            telemetry["servo"],
-            expected,
-            active_threshold=active_threshold,
-            neutral_tolerance=100,
-        )
-        if label == "yaw":
-            values = motor_pwm(telemetry["servo"])
-            yaw_differential = values[3] - values[1]
-            if yaw_differential <= 120:
+        if label != "yaw":
+            assert_pattern(
+                label,
+                telemetry["servo"],
+                expected,
+                active_threshold=80,
+                neutral_tolerance=100,
+            )
+        else:
+            # A rate controller legitimately removes most yaw torque as the
+            # body approaches the requested angular rate.  Inspect the peak
+            # transient differential rather than demanding sustained torque
+            # from the final sample.
+            pwm_samples = [
+                motor_pwm(message) for _, message in telemetry["servo_samples"]
+            ]
+            if not pwm_samples:
+                raise SmokeFailure("yaw: no SERVO_OUTPUT_RAW samples")
+            peak_values = max(pwm_samples, key=lambda values: values[3] - values[1])
+            yaw_differential = peak_values[3] - peak_values[1]
+            if (
+                yaw_differential <= 120
+                or peak_values[1] >= NEUTRAL_PWM - 50
+                or peak_values[3] <= NEUTRAL_PWM + 50
+            ):
                 raise SmokeFailure(
-                    "yaw: M4-M2 signed differential is too small "
-                    f"({yaw_differential}us, PWM={values})"
+                    "yaw: peak M4-M2 signed differential is too small "
+                    f"({yaw_differential}us, PWM={peak_values})"
                 )
+            print(f"  {'yaw peak':9s} PWM={peak_values}", flush=True)
+            states = telemetry["states"]
+            if not states:
+                raise SmokeFailure("yaw: no SIM_STATE samples during command")
+            peak_yaw_rate = max(float(state.zgyro) for state in states)
+            if peak_yaw_rate < 0.02:
+                raise SmokeFailure(
+                    "yaw: compass-independent body yaw rate is too small "
+                    f"(SIM_STATE.zgyro peak={peak_yaw_rate:.6f}rad/s)"
+                )
+            print(
+                f"  yaw body rate without compass peak={peak_yaw_rate:.4f}rad/s",
+                flush=True,
+            )
         session.collect(0.35, neutral)
 
 
@@ -1095,12 +1370,30 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="motorblimp-sitl-") as temp_dir:
         root = Path(temp_dir)
         if not args.skip_mixer:
+            manual_no_compass_defaults = root / "manual-no-compass.parm"
+            write_manual_no_compass_defaults(
+                args.defaults, manual_no_compass_defaults
+            )
             run_in_session(
                 "mixer",
                 args,
                 root,
                 args.base_port,
                 lambda session: test_mixer(session, args.command_pwm),
+                defaults=manual_no_compass_defaults,
+            )
+
+            manual_unaided_yaw_defaults = root / "manual-unaided-yaw.parm"
+            write_manual_unaided_yaw_defaults(
+                args.defaults, manual_unaided_yaw_defaults
+            )
+            run_in_session(
+                "healthy-compass-unaided-yaw",
+                args,
+                root,
+                args.base_port + 70,
+                test_healthy_compass_without_yaw_aiding,
+                defaults=manual_unaided_yaw_defaults,
             )
 
         if not args.skip_dynamics:

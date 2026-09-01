@@ -182,7 +182,7 @@ bool ArduMotorBlimp::compass_healthy() const
 {
     const Compass &vehicle_compass = AP::compass();
     return vehicle_compass.available() && vehicle_compass.healthy() &&
-           vehicle_compass.use_for_yaw();
+           vehicle_compass.use_for_yaw() && AP::ahrs().use_compass();
 }
 
 bool ArduMotorBlimp::navigation_healthy() const
@@ -290,6 +290,10 @@ bool ArduMotorBlimp::set_mode(uint8_t new_mode_value, ModeReason reason)
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode rejected: attitude invalid");
         return false;
     }
+    if (mode_requires_compass(new_mode) && !compass_healthy()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode rejected: compass invalid");
+        return false;
+    }
     if ((new_mode == Mode::AUTO || new_mode == Mode::GUIDED) &&
         !navigation_healthy()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
@@ -375,8 +379,8 @@ void ArduMotorBlimp::ahrs_update()
     ahrs.update(true);
 
     Quaternion attitude;
-    state.attitude_valid = ahrs.get_quaternion(attitude) &&
-                           FlightControl::quaternion_is_valid(attitude) &&
+    ahrs.get_quat_body_to_ned(attitude);
+    state.attitude_valid = FlightControl::quaternion_is_valid(attitude) &&
                            ahrs.has_status(AP_AHRS::Status::ATTITUDE_VALID);
     if (state.attitude_valid) {
         attitude.normalize();
@@ -426,7 +430,7 @@ void ArduMotorBlimp::control_loop()
     if (!arming.is_armed_and_safety_off() ||
         SRV_Channels::get_emergency_stop() ||
         battery.has_failsafed() || !attitude_healthy() ||
-        !compass_healthy()) {
+        (mode_requires_compass(control_mode) && !compass_healthy())) {
         stop_control();
         return;
     }
@@ -537,7 +541,8 @@ void ArduMotorBlimp::motors_output()
     const bool enabled = arming.is_armed_and_safety_off() &&
                          !SRV_Channels::get_emergency_stop() && control_active &&
                          allocation.valid && !battery.has_failsafed() &&
-                         compass_healthy();
+                         (!mode_requires_compass(control_mode) ||
+                          compass_healthy());
 
     SRV_Channels::set_output_scaled(
         SRV_Channel::k_motor1,
@@ -777,7 +782,8 @@ void ArduMotorBlimp::one_hz_loop()
     }
 
     const bool compass_failsafe_active =
-        arming.is_armed() && !compass_healthy();
+        arming.is_armed() && mode_requires_compass(control_mode) &&
+        !compass_healthy();
     if (compass_failsafe_active && !compass_failsafe_announced) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,
                       "Compass failsafe: motor neutral");
