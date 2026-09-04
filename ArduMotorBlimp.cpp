@@ -558,7 +558,14 @@ void ArduMotorBlimp::motors_output()
         enabled ? allocation.motor[3] * MOTOR_SCALE : 0.0f);
 
     SRV_Channels::calc_pwm();
+
+    // Cork so all four motor channels leave in a single DShot frame per
+    // loop; uncorked writes trigger a separate send per channel, which
+    // breaks the frame cadence the ESCs lock onto.
+    auto &srv = AP::srv();
+    srv.cork();
     SRV_Channels::output_ch_all();
+    srv.push();
 }
 
 void ArduMotorBlimp::output_motor_neutral()

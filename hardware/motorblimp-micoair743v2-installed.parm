@@ -1,0 +1,66 @@
+# ArduMotorBlimp — assembled airship on MicoAir743v2-AIO-35A (state verified on the bench 2026-09-04).
+# Load in MAVProxy: param load <this file>; then reboot.
+# NOT included on purpose: compass/UWB
+# settings (see README.md), and anything you have calibrated (accel, RC).
+
+# --- RC / ELRS on UART6 (from motorblimp-micoair743v2-rc-bench.parm) ---
+SERIAL6_PROTOCOL 23
+SERIAL6_OPTIONS 0
+RC_PROTOCOLS 512
+RC_OPTIONS 8224
+RC_FS_TIMEOUT 1.0
+RCMAP_ROLL 1
+RCMAP_PITCH 2
+RCMAP_THROTTLE 3
+RCMAP_YAW 4
+RC5_OPTION 153
+RC6_OPTION 31
+EK3_SRC1_YAW 0
+BATT_AMP_PERVLT 14.14
+
+# --- DShot300 to the integrated ESCs, reversible (3D) mode ---
+SERVO_BLH_MASK 15
+SERVO_BLH_OTYPE 5
+SERVO_BLH_3DMASK 15
+SERVO_DSHOT_ESC 2
+SERVO_BLH_BDMASK 0
+# outputs 1 and 2 spin clockwise viewed from the nose, 3 and 4 counter-clockwise
+SERVO_BLH_RVMASK 3
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36
+
+# --- Mixer: M1 bottom-right, M2 top-left, M3 bottom-left, M4 top-right (viewed from the nose) ---
+MIX_M1_FWD 1.0
+MIX_M1_RLL 1.0
+MIX_M1_PIT 0.7071
+MIX_M1_YAW -0.7071
+MIX_M2_FWD 1.0
+MIX_M2_RLL 1.0
+MIX_M2_PIT -0.7071
+MIX_M2_YAW 0.7071
+MIX_M3_FWD 1.0
+MIX_M3_RLL -1.0
+MIX_M3_PIT 0.7071
+MIX_M3_YAW 0.7071
+MIX_M4_FWD 1.0
+MIX_M4_RLL -1.0
+MIX_M4_PIT -0.7071
+MIX_M4_YAW -0.7071
+
+# --- Attitude control back to firmware defaults (were zeroed for bench motor checks) ---
+ATC_ANG_RLL_P 2.5
+ATC_ANG_PIT_P 2.5
+ATC_ANG_YAW_P 2.0
+
+# --- Conservative manual limits for first tethered runs ---
+MAN_FWD_MAX 0.10
+MAN_RLL_MAX 15
+MAN_PIT_MAX 20
+MAN_YAW_RATE 30
+
+ARMING_SKIPCHK 0
+
+# --- Board mounting: arrow points down-left (toward the tail-left corner), labels up => Yaw225 ---
+AHRS_ORIENTATION 5
