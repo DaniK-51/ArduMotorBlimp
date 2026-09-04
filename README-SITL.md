@@ -110,7 +110,7 @@ At runtime, autonomous control is stopped at neutral if the compass or fresh
 direct UWB fix becomes unhealthy. `UWB_ERR_MAX` defaults to 1.0 metre; the
 Nooploop backend requires at least four valid anchor blocks and its 300 ms
 timeout is not refreshed by a stale coordinate. An independent 1 kHz main-loop
-watchdog also commands explicit neutral and disarms after a 200 ms control-loop
+watchdog also commands explicit neutral and disarms after a 1 s control-loop
 stall; it does not depend on the stalled flight-control task being able to
 clean itself up.
 

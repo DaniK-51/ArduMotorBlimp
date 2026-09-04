@@ -233,7 +233,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Manual maximum roll angle
     // @Description: Maximum absolute roll-angle target commanded by the manual roll stick
     // @Units: deg
-    // @Range: 0 80
+    // @Range: 0 85
     // @User: Standard
     AP_GROUPINFO("MAN_RLL_MAX", 23, ParametersG2, manual_roll_max_deg, 30.0f),
 
@@ -241,7 +241,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Manual maximum pitch angle
     // @Description: Maximum absolute pitch-angle target commanded by the manual pitch stick
     // @Units: deg
-    // @Range: 0 80
+    // @Range: 0 85
     // @User: Standard
     AP_GROUPINFO("MAN_PIT_MAX", 24, ParametersG2, manual_pitch_max_deg, 60.0f),
 

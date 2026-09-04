@@ -157,9 +157,13 @@ private:
     void failsafe_check();
     void output_motor_neutral();
 
+    // Main-loop stall tolerated before the watchdog acts.  Copter uses 2 s;
+    // 200 ms tripped on routine parameter saves and log flushes.
+    static constexpr uint32_t CPU_FAILSAFE_TIMEOUT_US = 1000000U;
     uint16_t failsafe_last_ticks = 0;
     uint32_t failsafe_last_timestamp_us = 0;
-    bool cpu_failsafe_active = false;
+    // set by the timer thread, cleared by control_loop()
+    volatile bool cpu_failsafe_active = false;
 };
 
 extern ArduMotorBlimp motorblimp;

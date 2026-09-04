@@ -63,8 +63,11 @@ void ArduMotorBlimp::load_parameters()
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    // Motor commands are signed around a real neutral.  These are defaults,
-    // so an explicitly stored hardware calibration still takes precedence.
+    // Motor commands are signed around a real neutral.  These are defaults
+    // only: SRV_Channels::set_digital_outputs() re-trims DShot channels at
+    // boot and forces TRIM to 1000 unless the channel is in
+    // SERVO_BLH_3DMASK, so the pre-arm check in AP_Arming_MotorBlimp
+    // refuses to arm until every motor output is back on 1000/1500/2000.
     AP_Param::set_default_by_name("SCHED_LOOP_RATE", 400);
     AP_Param::set_default_by_name("SERVO1_MIN", 1000);
     AP_Param::set_default_by_name("SERVO1_TRIM", 1500);
@@ -321,7 +324,18 @@ bool ArduMotorBlimp::set_mode(uint8_t new_mode_value, ModeReason reason)
     reset_control_state(new_mode == Mode::GUIDED);
 
     if (new_mode == Mode::HOLD && !set_hold_target_from_attitude()) {
+        // Fall back to MANUAL and announce it like any other mode change so
+        // the GCS, notify outputs and the log do not keep reporting HOLD.
         control_mode = Mode::MANUAL;
+        control_mode_reason = ModeReason::UNAVAILABLE;
+        AP_Notify::flags.autopilot_mode = false;
+        AP_Notify::flags.flight_mode = uint8_t(Mode::MANUAL);
+#if HAL_LOGGING_ENABLED
+        AP::logger().Write_Mode(uint8_t(Mode::MANUAL), ModeReason::UNAVAILABLE);
+#endif
+        gcs().send_message(MSG_HEARTBEAT);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                      "HOLD rejected: no attitude target, staying in MANUAL");
         return false;
     }
     if (new_mode == Mode::AUTO) {
@@ -425,6 +439,18 @@ void ArduMotorBlimp::rc_loop()
 
 void ArduMotorBlimp::control_loop()
 {
+    // The timer-thread watchdog only cuts the HAL soft-arm and writes
+    // neutral; the full disarm bookkeeping (state reset, logging, GCS text)
+    // is not timer-thread safe and is completed here once the loop runs.
+    if (cpu_failsafe_active) {
+        cpu_failsafe_active = false;
+        if (arming.is_armed()) {
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU,
+                               LogErrorCode::FAILSAFE_OCCURRED);
+            IGNORE_RETURN(arming.disarm(AP_Arming::Method::CPUFAILSAFE, false));
+        }
+    }
+
     // Do not let rate integrators or the allocator continue winding up while
     // the hardware safety switch or emergency stop is suppressing outputs.
     if (!arming.is_armed_and_safety_off() ||
@@ -575,7 +601,14 @@ void ArduMotorBlimp::output_motor_neutral()
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor3, 0.0f);
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor4, 0.0f);
     SRV_Channels::calc_pwm();
+
+    // cork/push here as well: if the main loop stalled between its own
+    // cork() and push(), an uncorked write would only land in the corked
+    // buffer and the last thrust command would stay latched on the ESCs.
+    auto &srv = AP::srv();
+    srv.cork();
     SRV_Channels::output_ch_all();
+    srv.push();
 }
 
 void ArduMotorBlimp::failsafe_check_static()
@@ -588,19 +621,23 @@ void ArduMotorBlimp::failsafe_check()
     const uint32_t now_us = AP_HAL::micros();
     const uint16_t ticks = scheduler.ticks();
     if (ticks != failsafe_last_ticks) {
+        // main loop is running; cpu_failsafe_active is consumed by control_loop()
         failsafe_last_ticks = ticks;
         failsafe_last_timestamp_us = now_us;
-        cpu_failsafe_active = false;
         return;
     }
 
-    if (!cpu_failsafe_active && arming.is_armed() &&
-        now_us - failsafe_last_timestamp_us > 200000U) {
+    if (arming.is_armed() &&
+        now_us - failsafe_last_timestamp_us > CPU_FAILSAFE_TIMEOUT_US) {
+        // Timer-thread context, mirror Copter::failsafe_check(): only cut the
+        // HAL soft-arm (DShot then carries zero throttle) and write neutral,
+        // and repeat once per second while the stall persists.  The explicit
+        // SRV write is still required because a reversible ESC's safe value
+        // is TRIM, not MIN or an absent pulse.  Everything else happens in
+        // control_loop() when the main loop is back.
+        failsafe_last_timestamp_us = now_us;
         cpu_failsafe_active = true;
-        // AP_Arming clears soft-armed state; the explicit SRV write is still
-        // required because a reversible ESC's safe value is TRIM, not MIN or
-        // an absent pulse.
-        IGNORE_RETURN(arming.disarm(AP_Arming::Method::CPUFAILSAFE, false));
+        hal.util->set_soft_armed(false);
         output_motor_neutral();
     }
 }

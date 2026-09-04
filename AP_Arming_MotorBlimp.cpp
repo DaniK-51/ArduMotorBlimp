@@ -62,6 +62,30 @@ bool AP_Arming_MotorBlimp::pre_arm_checks(bool report)
         passed = false;
     }
 
+    // Every disarm/e-stop/failsafe path writes scaled 0, which is only a
+    // stopped motor if the channel is trimmed to 1500.  DShot channels are
+    // re-trimmed at boot by SRV_Channels::set_digital_outputs(): outside
+    // SERVO_BLH_3DMASK the trim becomes 1000, i.e. full reverse on a 3D ESC.
+    static const SRV_Channel::Function motor_functions[] = {
+        SRV_Channel::k_motor1, SRV_Channel::k_motor2,
+        SRV_Channel::k_motor3, SRV_Channel::k_motor4,
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(motor_functions); i++) {
+        const SRV_Channel *c = SRV_Channels::get_channel_for(motor_functions[i]);
+        if (c == nullptr) {
+            check_failed(report, "Motor %u has no output channel", unsigned(i + 1));
+            passed = false;
+            continue;
+        }
+        if (c->get_trim() != 1500 || c->get_output_min() != 1000 ||
+            c->get_output_max() != 2000) {
+            check_failed(report,
+                         "Motor %u output not reversible (trim %u): check SERVO_BLH_3DMASK",
+                         unsigned(i + 1), unsigned(c->get_trim()));
+            passed = false;
+        }
+    }
+
     return passed;
 }
 
