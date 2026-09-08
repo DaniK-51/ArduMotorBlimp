@@ -379,6 +379,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("UWB_ERR_MAX", 43, ParametersG2, uwb_accuracy_max_m, 1.0f),
 
+    // @Param: MIX_DEADBAND
+    // @DisplayName: Motor output deadband
+    // @Description: Motor commands smaller than this fraction of full thrust are output as exact neutral (1500 us). A reversible DShot ESC treats only exactly 1500 as stopped, so without a deadband the attitude loops keep the motors idling around neutral. Keep it well below MAN_FWD_MAX, otherwise small stick and attitude corrections are lost.
+    // @Range: 0 0.3
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("MIX_DEADBAND", 44, ParametersG2, mix_deadband, 0.02f),
+
     AP_GROUPEND
 };
 

@@ -64,3 +64,6 @@ ARMING_SKIPCHK 0
 
 # --- Board mounting: arrow points down-left (toward the tail-left corner), labels up => Yaw225 ---
 AHRS_ORIENTATION 5
+
+# --- Motor output deadband (fraction of full thrust snapped to exact neutral) ---
+MIX_DEADBAND 0.02

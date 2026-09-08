@@ -570,18 +570,23 @@ void ArduMotorBlimp::motors_output()
                          (!mode_requires_compass(control_mode) ||
                           compass_healthy());
 
+    // A reversible DShot ESC is stopped only at exactly 1500 us; anything
+    // else is at least minimum throttle.  Snap small commands to neutral so
+    // the attitude loops cannot keep the motors idling around zero.
+    const float deadband = constrain_float(g2.mix_deadband.get(), 0.0f, 0.3f);
+    const auto motor_output = [&](float command) {
+        return (enabled && fabsf(command) >= deadband) ? command * MOTOR_SCALE
+                                                        : 0.0f;
+    };
+
     SRV_Channels::set_output_scaled(
-        SRV_Channel::k_motor1,
-        enabled ? allocation.motor[0] * MOTOR_SCALE : 0.0f);
+        SRV_Channel::k_motor1, motor_output(allocation.motor[0]));
     SRV_Channels::set_output_scaled(
-        SRV_Channel::k_motor2,
-        enabled ? allocation.motor[1] * MOTOR_SCALE : 0.0f);
+        SRV_Channel::k_motor2, motor_output(allocation.motor[1]));
     SRV_Channels::set_output_scaled(
-        SRV_Channel::k_motor3,
-        enabled ? allocation.motor[2] * MOTOR_SCALE : 0.0f);
+        SRV_Channel::k_motor3, motor_output(allocation.motor[2]));
     SRV_Channels::set_output_scaled(
-        SRV_Channel::k_motor4,
-        enabled ? allocation.motor[3] * MOTOR_SCALE : 0.0f);
+        SRV_Channel::k_motor4, motor_output(allocation.motor[3]));
 
     SRV_Channels::calc_pwm();
 
