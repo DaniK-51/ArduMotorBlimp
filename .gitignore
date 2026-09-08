@@ -1,0 +1,15 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# SITL and MAVProxy runtime state
+eeprom.bin
+mav.parm
+*.tlog
+*.tlog.raw
+logs/
+dumpcore.sh_*.out
+dumpstack.sh_*.out
+
+# Local platform metadata
+.DS_Store

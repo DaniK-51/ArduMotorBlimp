@@ -1,0 +1,144 @@
+#include "ArduMotorBlimp.h"
+
+#include <AP_Logger/AP_Logger.h>
+
+extern const AP_HAL::HAL& hal;
+
+bool AP_Arming_MotorBlimp::gps_checks(const bool report)
+{
+    // AP_Arming's generic GPS check always requires a GPS-derived home.  This
+    // vehicle deliberately has GPS disabled: MANUAL needs only attitude/RC,
+    // while autonomous modes use the UWB/compass EKF state instead.
+    const Mode mode = static_cast<Mode>(motorblimp.get_mode());
+    if ((mode == Mode::AUTO || mode == Mode::GUIDED) &&
+        !motorblimp.navigation_healthy()) {
+        check_failed(Check::GPS, report, "UWB/EKF/compass invalid");
+        return false;
+    }
+    return true;
+}
+
+bool AP_Arming_MotorBlimp::compass_checks(const bool report)
+{
+    const Mode mode = static_cast<Mode>(motorblimp.get_mode());
+    if (!mode_requires_compass(mode)) {
+#if COMPASS_CAL_ENABLED
+        Compass &vehicle_compass = AP::compass();
+        if (vehicle_compass.is_calibrating()) {
+            check_failed(report, "Compass calibration running");
+            return false;
+        }
+        if (vehicle_compass.compass_cal_requires_reboot()) {
+            check_failed(report, "Compass calibrated requires reboot");
+            return false;
+        }
+#endif
+        return true;
+    }
+
+    if (!AP_Arming::compass_checks(report)) {
+        return false;
+    }
+    if (!motorblimp.compass_healthy()) {
+        check_failed(Check::COMPASS, report,
+                     "Compass unavailable/not used for yaw");
+        return false;
+    }
+    return true;
+}
+
+bool AP_Arming_MotorBlimp::pre_arm_checks(bool report)
+{
+    bool passed = AP_Arming::pre_arm_checks(report);
+
+    if (!motorblimp.attitude_healthy()) {
+        check_failed(Check::INS, report, "Attitude estimate invalid");
+        passed = false;
+    }
+
+    const Mode mode = static_cast<Mode>(motorblimp.get_mode());
+    if (mode == Mode::MANUAL && rc().in_rc_failsafe()) {
+        check_failed(Check::RC, report, "No valid centred RC input");
+        passed = false;
+    }
+
+    // Every disarm/e-stop/failsafe path writes scaled 0, which is only a
+    // stopped motor if the channel is trimmed to 1500.  DShot channels are
+    // re-trimmed at boot by SRV_Channels::set_digital_outputs(): outside
+    // SERVO_BLH_3DMASK the trim becomes 1000, i.e. full reverse on a 3D ESC.
+    static const SRV_Channel::Function motor_functions[] = {
+        SRV_Channel::k_motor1, SRV_Channel::k_motor2,
+        SRV_Channel::k_motor3, SRV_Channel::k_motor4,
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(motor_functions); i++) {
+        const SRV_Channel *c = SRV_Channels::get_channel_for(motor_functions[i]);
+        if (c == nullptr) {
+            check_failed(report, "Motor %u has no output channel", unsigned(i + 1));
+            passed = false;
+            continue;
+        }
+        if (c->get_trim() != 1500 || c->get_output_min() != 1000 ||
+            c->get_output_max() != 2000) {
+            check_failed(report,
+                         "Motor %u output not reversible (trim %u): check SERVO_BLH_3DMASK",
+                         unsigned(i + 1), unsigned(c->get_trim()));
+            passed = false;
+        }
+    }
+
+    return passed;
+}
+
+bool AP_Arming_MotorBlimp::arm(const Method method, const bool do_arming_checks)
+{
+    if (is_armed()) {
+        return true;
+    }
+
+    if (!AP_Arming::arm(method, do_arming_checks)) {
+        AP_Notify::events.arming_failed = true;
+        return false;
+    }
+
+    hal.util->set_soft_armed(true);
+    AP_Notify::flags.armed = true;
+#if HAL_LOGGING_ENABLED
+    AP::logger().set_vehicle_armed(true);
+#endif
+    send_arm_disarm_statustext("Arming motors");
+    return true;
+}
+
+bool AP_Arming_MotorBlimp::disarm(const Method method, const bool do_disarm_checks)
+{
+    if (!is_armed()) {
+        return true;
+    }
+
+    if (!AP_Arming::disarm(method, do_disarm_checks)) {
+        return false;
+    }
+
+    // A GUIDED setpoint is intentionally persistent during flight, but must
+    // never survive a disarm/re-arm cycle.  The vehicle may have been carried
+    // while disarmed, so replaying the old coordinate would cause an
+    // unexpected motor start.  AUTO mission state is kept separately and may
+    // be resumed deliberately in the usual ArduPilot manner.
+    const bool clear_navigation_target =
+        static_cast<Mode>(motorblimp.get_mode()) == Mode::GUIDED;
+    motorblimp.reset_control_state(clear_navigation_target);
+
+    // Write the reversible-ESC stop value synchronously, while the HAL is
+    // still soft-armed and will pass the pulse through.  Waiting for the next
+    // main-loop motors_output() leaves a narrow stale-PWM race if the loop
+    // locks immediately after this disarm request.
+    motorblimp.output_motor_neutral();
+
+    hal.util->set_soft_armed(false);
+    AP_Notify::flags.armed = false;
+#if HAL_LOGGING_ENABLED
+    AP::logger().set_vehicle_armed(false);
+#endif
+    send_arm_disarm_statustext("Disarming motors");
+    return true;
+}

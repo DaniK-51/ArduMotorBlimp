@@ -1,0 +1,1187 @@
+diff --git a/Tools/autotest/default_params/motorblimp.parm b/Tools/autotest/default_params/motorblimp.parm
+new file mode 100644
+index 0000000..25d546b
+--- /dev/null
++++ b/Tools/autotest/default_params/motorblimp.parm
+@@ -0,0 +1,117 @@
++# ArduMotorBlimp SITL defaults for a reversible four-motor ring.
++# PWM 1500 is stopped, 1000 is full reverse, and 2000 is full forward.
++
++SERVO1_FUNCTION 33
++SERVO2_FUNCTION 34
++SERVO3_FUNCTION 35
++SERVO4_FUNCTION 36
++
++SERVO1_MIN 1000
++SERVO1_TRIM 1500
++SERVO1_MAX 2000
++SERVO2_MIN 1000
++SERVO2_TRIM 1500
++SERVO2_MAX 2000
++SERVO3_MIN 1000
++SERVO3_TRIM 1500
++SERVO3_MAX 2000
++SERVO4_MIN 1000
++SERVO4_TRIM 1500
++SERVO4_MAX 2000
++
++RC1_MIN 1000
++RC1_TRIM 1500
++RC1_MAX 2000
++RC2_MIN 1000
++RC2_TRIM 1500
++RC2_MAX 2000
++RC3_MIN 1000
++RC3_TRIM 1500
++RC3_MAX 2000
++RC4_MIN 1000
++RC4_TRIM 1500
++RC4_MAX 2000
++
++# Mark the single simulated accelerometer as calibrated so normal (non-force)
++# arming exercises the same pre-arm path as hardware.
++SIM_IMU_COUNT 1
++INS_ACCOFFS_X 0.001
++INS_ACCOFFS_Y 0.001
++INS_ACCOFFS_Z 0.001
++INS_ACCSCAL_X 1.001
++INS_ACCSCAL_Y 1.001
++INS_ACCSCAL_Z 1.001
++
++# Matrix columns are forward, roll, pitch, yaw. Motor order is
++# M1 top, M2 right, M3 bottom, M4 left when looking along body X.
++MIX_M1_FWD 1
++MIX_M1_RLL 1
++MIX_M1_PIT -1
++MIX_M1_YAW 0
++MIX_M2_FWD 1
++MIX_M2_RLL -1
++MIX_M2_PIT 0
++MIX_M2_YAW -1
++MIX_M3_FWD 1
++MIX_M3_RLL 1
++MIX_M3_PIT 1
++MIX_M3_YAW 0
++MIX_M4_FWD 1
++MIX_M4_RLL -1
++MIX_M4_PIT 0
++MIX_M4_YAW 1
++
++# Controller defaults are explicit here so --wipe starts from the same gains
++# in every ArduPilot checkout and CI runner.
++ATC_ANG_RLL_P 2.5
++ATC_ANG_PIT_P 2.5
++ATC_ANG_YAW_P 2
++ATC_RAT_RLL_MAX 60
++ATC_RAT_PIT_MAX 60
++ATC_RAT_YAW_MAX 45
++MAN_RLL_MAX 30
++MAN_PIT_MAX 60
++MAN_YAW_RATE 45
++MAN_FWD_MAX 1
++PSC_POS_P 0.4
++PSC_VEL_P 1
++PSC_VEL_I 0.1
++PSC_VEL_IMAX 0.2
++NAV_VEL_MAX 0.5
++NAV_ACC_MAX 0.3
++NAV_FWD_MAX 0.7
++NAV_PIT_MAX 60
++NAV_ACC_MIN 0.02
++NAV_REV_HYST 0.15
++NAV_THR_ANGLE 30
++WP_RADIUS 0.4
++WP_SPEED 0.15
++UWB_ERR_MAX 1.0
++
++# Useful streams for manual inspection; the smoke test also requests its
++# messages explicitly with MAV_CMD_SET_MESSAGE_INTERVAL.
++MAV1_RC_CHAN 10
++MAV1_EXTRA1 10
++
++# Automatic navigation in SITL: the one vehicle UWB tag supplies direct XYZ
++# position through AP_Beacon, while yaw comes only from the internal compass.
++# Keep the default simulated vehicle location at the beacon origin as well.
++# This makes both sim_vehicle.py and direct binary launches valid even when
++# the caller does not provide an explicit --home/-l override.
++SIM_OPOS_LAT 55.751244
++SIM_OPOS_LNG 37.618423
++SIM_OPOS_ALT 200
++SIM_OPOS_HDG 0
++BCN_TYPE 10
++BCN_LATITUDE 55.751244
++BCN_LONGITUDE 37.618423
++BCN_ALT 200
++GPS1_TYPE 0
++AHRS_EKF_TYPE 3
++EK2_ENABLE 0
++EK3_ENABLE 1
++EK3_SRC1_POSXY 4
++EK3_SRC1_POSZ 4
++EK3_SRC1_VELXY 0
++EK3_SRC1_VELZ 0
++EK3_SRC1_YAW 1
+diff --git a/Tools/autotest/pysim/vehicleinfo.py b/Tools/autotest/pysim/vehicleinfo.py
+index a3b4e8c..4a4541e 100644
+--- a/Tools/autotest/pysim/vehicleinfo.py
++++ b/Tools/autotest/pysim/vehicleinfo.py
+@@ -285,6 +285,16 @@ class VehicleInfo(object):
+             },
+         },
+     },
++    "ArduMotorBlimp": {
++        "default_frame": "motorblimp",
++        "frames": {
++            "motorblimp": {
++                "model": "motorblimp",
++                "waf_target": "bin/ardumotorblimp",
++                "default_params_filename": "default_params/motorblimp.parm",
++            },
++        },
++    },
+     "ArduPlane": {
+         "default_frame": "plane",
+         "frames": {
+@@ -572,4 +582,3 @@ class VehicleInfo(object):
+         return ret
+ 
+ 
+-
+diff --git a/libraries/AP_Arming/AP_Arming.h b/libraries/AP_Arming/AP_Arming.h
+index a560140..e7ac3ed 100644
+--- a/libraries/AP_Arming/AP_Arming.h
++++ b/libraries/AP_Arming/AP_Arming.h
+@@ -205,7 +205,7 @@ protected:
+     virtual bool ins_checks(bool report);
+ #endif
+ 
+-    bool compass_checks(bool report);
++    virtual bool compass_checks(bool report);
+ 
+     virtual bool gps_checks(bool report);
+ 
+diff --git a/libraries/AP_BLHeli/AP_BLHeli.cpp b/libraries/AP_BLHeli/AP_BLHeli.cpp
+index e6b6dfc..1542338 100644
+--- a/libraries/AP_BLHeli/AP_BLHeli.cpp
++++ b/libraries/AP_BLHeli/AP_BLHeli.cpp
+@@ -1441,6 +1441,11 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
+     if (otype == AP_HAL::RCOutput::MODE_PWM_NONE) {
+         otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
+     }
++    // the ESC type selects the DShot bit timings that set_output_mode bakes
++    // into the timer period, so it must be known before the mode is applied.
++    // Vehicles without AP_Motors reach here with the type still unset.
++    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
++
+     switch (otype) {
+     case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+     case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
+diff --git a/libraries/AP_Beacon/AP_Beacon.cpp b/libraries/AP_Beacon/AP_Beacon.cpp
+index 4713b95..4ff825b 100644
+--- a/libraries/AP_Beacon/AP_Beacon.cpp
++++ b/libraries/AP_Beacon/AP_Beacon.cpp
+@@ -15,6 +15,13 @@
+ 
+ #include "AP_Beacon.h"
+ 
++// AP_Beacon is normally a common library object.  MotorBlimp enables it on
++// 2 MiB boards, so this translation unit must be compiled with the vehicle
++// build defines instead of being shared with vehicles that disable Beacon.
++#if APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)
++static_assert(AP_BEACON_ENABLED, "MotorBlimp requires AP_Beacon");
++#endif
++
+ #if AP_BEACON_ENABLED
+ 
+ #include "AP_Beacon_Backend.h"
+@@ -103,13 +110,19 @@ void AP_Beacon::init(void)
+     // create backend
+     switch ((Type)_type) {
+     case Type::Pozyx:
++#if AP_BEACON_POZYX_ENABLED
+         _driver = NEW_NOTHROW AP_Beacon_Pozyx(*this);
++#endif
+         break;
+     case Type::Marvelmind:
++#if AP_BEACON_MARVELMIND_ENABLED
+         _driver = NEW_NOTHROW AP_Beacon_Marvelmind(*this);
++#endif
+         break;
+     case Type::Nooploop:
++#if AP_BEACON_NOOPLOOP_ENABLED
+         _driver = NEW_NOTHROW AP_Beacon_Nooploop(*this);
++#endif
+         break;
+ #if AP_BEACON_SITL_ENABLED
+     case Type::SITL:
+diff --git a/libraries/AP_Beacon/AP_Beacon.h b/libraries/AP_Beacon/AP_Beacon.h
+index aaebfa8..0db7e49 100644
+--- a/libraries/AP_Beacon/AP_Beacon.h
++++ b/libraries/AP_Beacon/AP_Beacon.h
+@@ -73,6 +73,9 @@ public:
+     // return vehicle position in NED from position estimate system's origin in meters
+     bool get_vehicle_position_ned(Vector3f& pos, float& accuracy_estimate) const;
+ 
++    // system time at which the backend supplied the current vehicle position
++    uint32_t vehicle_position_update_ms() const { return veh_pos_update_ms; }
++
+     // return the number of beacons
+     uint8_t count() const;
+ 
+diff --git a/libraries/AP_Beacon/AP_Beacon_Backend.cpp b/libraries/AP_Beacon/AP_Beacon_Backend.cpp
+index ee2bb0c..2370278 100644
+--- a/libraries/AP_Beacon/AP_Beacon_Backend.cpp
++++ b/libraries/AP_Beacon/AP_Beacon_Backend.cpp
+@@ -15,6 +15,12 @@
+ 
+ #include "AP_Beacon_Backend.h"
+ 
++// Keep this feature-gated object vehicle-specific when MotorBlimp enables
++// Beacon on targets where the common library build disables it.
++#if APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)
++static_assert(AP_BEACON_ENABLED, "MotorBlimp requires AP_Beacon backend");
++#endif
++
+ #if AP_BEACON_ENABLED
+ 
+ // debug
+diff --git a/libraries/AP_Beacon/AP_Beacon_Nooploop.cpp b/libraries/AP_Beacon/AP_Beacon_Nooploop.cpp
+index 6ddbe8a..36e4f71 100644
+--- a/libraries/AP_Beacon/AP_Beacon_Nooploop.cpp
++++ b/libraries/AP_Beacon/AP_Beacon_Nooploop.cpp
+@@ -15,6 +15,12 @@
+ 
+ #include "AP_Beacon_Nooploop.h"
+ 
++// AP_BEACON_NOOPLOOP_ENABLED is vehicle-dependent for MotorBlimp, so this
++// translation unit must be compiled with the vehicle build defines.
++#if APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)
++static_assert(AP_BEACON_NOOPLOOP_ENABLED, "MotorBlimp requires Nooploop");
++#endif
++
+ #if AP_BEACON_NOOPLOOP_ENABLED
+ 
+ #include <AP_HAL/AP_HAL.h>
+@@ -27,7 +33,6 @@
+ 
+ #define NOOPLOOP_HEADER                     0x55    // message header
+ #define NOOPLOOP_FUNCTION_MARK_NODE_FRAME2  4
+-#define NOOPLOOP_NODE_FRAME2_FRAMELEN_MAX   4096    // frames should be less than 4k bytes
+ #define NOOPLOOP_NODE_FRAME2_SYSTIME        6       // start of 4 bytes holding system time in ms
+ #define NOOPLOOP_NODE_FRAME2_PRECISION_X    10      // start of 1 byte holding precision in m*100 in x axis
+ #define NOOPLOOP_NODE_FRAME2_PRECISION_Y    11      // start of 1 byte holding precision in m*100 in y axis
+@@ -37,6 +42,9 @@
+ #define NOOPLOOP_NODE_FRAME2_POSZ           19      // start of 3 bytes holding z position in m*1000
+ #define NOOPLOOP_NODE_FRAME2_VALID_NODES    118
+ #define NOOPLOOP_NODE_FRAME2_NODE_BLOCK     119
++#define NOOPLOOP_NODE_FRAME2_NODE_BLOCK_LEN 13
++#define NOOPLOOP_NODE_FRAME2_FRAMELEN_MIN   (NOOPLOOP_NODE_FRAME2_NODE_BLOCK + 1) // fixed fields plus CRC
++#define NOOPLOOP_NODE_FRAME2_MIN_FIX_NODES  4
+ 
+ #define NOOPLOOP_HEADER2                    0x54    // message header
+ #define NOOPLOOP_FUNCTION_MARK_SETTING_FRAME0  0
+@@ -145,7 +153,11 @@ AP_Beacon_Nooploop::MsgType AP_Beacon_Nooploop::parse_byte(uint8_t b)
+     case ParseState::LEN_H:
+         // extract and sanity check frame length
+         _frame_len = UINT16_VALUE(b, _msgbuf[2]);
+-        if (_frame_len > NOOPLOOP_NODE_FRAME2_FRAMELEN_MAX) {
++        // Every accepted byte, including the trailing CRC, must fit in the
++        // fixed parser buffer.  The previous 4 kB limit allowed a CRC-valid
++        // long frame to be reported even though most of it was never stored.
++        if (_frame_len < NOOPLOOP_NODE_FRAME2_FRAMELEN_MIN ||
++            _frame_len > NOOPLOOP_MSG_BUF_MAX) {
+             _state = ParseState::HEADER;
+         } else {
+             _msgbuf[3] = b;
+@@ -195,32 +207,55 @@ AP_Beacon_Nooploop::MsgType AP_Beacon_Nooploop::parse_byte(uint8_t b)
+ 
+ void AP_Beacon_Nooploop::parse_node_frame2()
+ {
+-    // a message has been received
+-    _last_update_ms = AP_HAL::millis();
++    // NODE_FRAME2 contains fixed bytes 0..118, exactly valid_nodes 13-byte
++    // blocks and one trailing CRC.  Require that exact length so a
++    // checksum-valid frame cannot hide partial or trailing payload bytes.
++    const uint8_t valid_nodes = _msgbuf[NOOPLOOP_NODE_FRAME2_VALID_NODES];
++    const uint32_t expected_frame_len =
++        NOOPLOOP_NODE_FRAME2_FRAMELEN_MIN +
++        uint32_t(valid_nodes) * NOOPLOOP_NODE_FRAME2_NODE_BLOCK_LEN;
++    if (_frame_len != expected_frame_len) {
++        return;
++    }
+ 
+-    // estimated precision for x,y position in meters
++    // estimated precision for x,y,z position in meters
+     const float precision_x = _msgbuf[NOOPLOOP_NODE_FRAME2_PRECISION_X] * 0.01;
+     const float precision_y = _msgbuf[NOOPLOOP_NODE_FRAME2_PRECISION_Y] * 0.01;
++    const float precision_z = _msgbuf[NOOPLOOP_NODE_FRAME2_PRECISION_Z] * 0.01;
+     //EKF's estimate goes very bad if the error value sent into the EKF is unrealistically low. ensure it's never less than a reasonable value
+-    const float pos_err = MAX(0.1f, sqrtf(sq(precision_x)+sq(precision_y)));
++    const float pos_err = MAX(0.1f, MAX(sqrtf(sq(precision_x)+sq(precision_y)), precision_z));
+ 
+     // x,y,z position in m*1000 in ENU frame
+     const int32_t pos_x = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSX+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSX+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSX] << 8) >> 8;
+     const int32_t pos_y = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSY+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSY+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSY] << 8) >> 8;
+     const int32_t pos_z = ((int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ+2] << 24 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ+1] << 16 | (int32_t)_msgbuf[NOOPLOOP_NODE_FRAME2_POSZ] << 8) >> 8;
+ 
++    const bool position_valid =
++        pos_x != NOOPLOOP_INVALID_VAL &&
++        pos_y != NOOPLOOP_INVALID_VAL &&
++        pos_z != NOOPLOOP_INVALID_VAL;
++
+     // position scaled to meters and changed to NED
+     const Vector3f pos_m {pos_y * 0.001f, pos_x * 0.001f, -pos_z * 0.001f};
+ 
+-    set_vehicle_position(pos_m, pos_err);
+-
+-    const uint8_t valid_nodes = _msgbuf[NOOPLOOP_NODE_FRAME2_VALID_NODES];
+     for (uint8_t i = 0; i < valid_nodes; i++) {
+-        uint16_t offset = NOOPLOOP_NODE_FRAME2_NODE_BLOCK + i * 13;
++        const uint16_t offset = NOOPLOOP_NODE_FRAME2_NODE_BLOCK +
++            i * NOOPLOOP_NODE_FRAME2_NODE_BLOCK_LEN;
+         uint8_t id = _msgbuf[offset+1]; //nooploop id starts from 0, increments clockwise, 0 -> 1 define Y axis.
+         const int32_t dist = ((int32_t)_msgbuf[offset+2+2] << 24 | (int32_t)_msgbuf[offset+2+1] << 16 | (int32_t)_msgbuf[offset+2] << 8) >> 8;
+         set_beacon_distance(id, dist * 0.001f);
+     }
++
++    // NODE_FRAME2 keeps transmitting the last coordinates when the tag can
++    // no longer solve a position.  In that state valid_nodes drops below the
++    // four anchors required for a 3D fix.  Do not refresh either the direct
++    // position timestamp or backend health from such a stale coordinate.
++    if (!position_valid || valid_nodes < NOOPLOOP_NODE_FRAME2_MIN_FIX_NODES) {
++        return;
++    }
++
++    _last_update_ms = AP_HAL::millis();
++    set_vehicle_position(pos_m, pos_err);
+ }
+ 
+ void AP_Beacon_Nooploop::parse_setting_frame0()
+diff --git a/libraries/AP_Beacon/AP_Beacon_Nooploop.h b/libraries/AP_Beacon/AP_Beacon_Nooploop.h
+index 222c773..9246df6 100644
+--- a/libraries/AP_Beacon/AP_Beacon_Nooploop.h
++++ b/libraries/AP_Beacon/AP_Beacon_Nooploop.h
+@@ -50,13 +50,13 @@ private:
+     } _state = ParseState::HEADER;
+ 
+     // members
+-    uint8_t _msgbuf[NOOPLOOP_MSG_BUF_MAX];      // buffer to hold most recent message from tag
+-    uint16_t _msg_len;                          // number of bytes received from the current message (may be larger than size of _msgbuf)
+-    uint16_t _frame_len;                        // message supplied frame length
+-    uint8_t _crc_expected;                      // calculated crc which is compared against actual received crc
+-    uint32_t _last_update_ms;                   // last time we receive data from tag
+-    bool _anchor_pos_avail;                     // flag indicates if we got anchor position or not
+-    uint32_t _last_request_setting_ms;          // last time we sent request_setting0 packet to tag
++    uint8_t _msgbuf[NOOPLOOP_MSG_BUF_MAX] {};   // buffer to hold most recent message from tag
++    uint16_t _msg_len = 0;                      // number of bytes received from the current message
++    uint16_t _frame_len = 0;                    // message supplied frame length
++    uint8_t _crc_expected = 0;                  // calculated crc which is compared against actual received crc
++    uint32_t _last_update_ms = 0;               // last time we received a valid tag position
++    bool _anchor_pos_avail = false;              // flag indicates if we got anchor position or not
++    uint32_t _last_request_setting_ms = 0;       // last time we sent request_setting0 packet to tag
+ };
+ 
+ #endif  // AP_BEACON_NOOPLOOP_ENABLED
+diff --git a/libraries/AP_Beacon/AP_Beacon_config.h b/libraries/AP_Beacon/AP_Beacon_config.h
+index f468069..81775c7 100644
+--- a/libraries/AP_Beacon/AP_Beacon_config.h
++++ b/libraries/AP_Beacon/AP_Beacon_config.h
+@@ -1,9 +1,16 @@
+ #pragma once
+ 
+ #include <AP_HAL/AP_HAL_Boards.h>
++#include <AP_Vehicle/AP_Vehicle_Type.h>
++
++#ifdef APM_BUILD_DIRECTORY
++#define AP_BEACON_MOTORBLIMP_BUILD APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)
++#else
++#define AP_BEACON_MOTORBLIMP_BUILD 0
++#endif
+ 
+ #ifndef AP_BEACON_ENABLED
+-#define AP_BEACON_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 2048
++#define AP_BEACON_ENABLED (AP_BEACON_MOTORBLIMP_BUILD || HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
+ #endif
+ 
+ #ifndef AP_BEACON_MAX_BEACONS
+@@ -15,7 +22,7 @@
+ #endif
+ 
+ #ifndef AP_BEACON_BACKEND_DEFAULT_ENABLED
+-#define AP_BEACON_BACKEND_DEFAULT_ENABLED AP_BEACON_ENABLED
++#define AP_BEACON_BACKEND_DEFAULT_ENABLED (AP_BEACON_ENABLED && !AP_BEACON_MOTORBLIMP_BUILD)
+ #endif
+ 
+ #ifndef AP_BEACON_MARVELMIND_ENABLED
+@@ -23,7 +30,7 @@
+ #endif
+ 
+ #ifndef AP_BEACON_NOOPLOOP_ENABLED
+-#define AP_BEACON_NOOPLOOP_ENABLED AP_BEACON_BACKEND_DEFAULT_ENABLED
++#define AP_BEACON_NOOPLOOP_ENABLED (AP_BEACON_MOTORBLIMP_BUILD || AP_BEACON_BACKEND_DEFAULT_ENABLED)
+ #endif
+ 
+ #ifndef AP_BEACON_POZYX_ENABLED
+@@ -31,5 +38,5 @@
+ #endif
+ 
+ #ifndef AP_BEACON_SITL_ENABLED
+-#define AP_BEACON_SITL_ENABLED (AP_BEACON_BACKEND_DEFAULT_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
++#define AP_BEACON_SITL_ENABLED (AP_BEACON_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+ #endif
+diff --git a/libraries/AP_DAL/AP_DAL_Beacon.cpp b/libraries/AP_DAL/AP_DAL_Beacon.cpp
+index a1d661e..3b66763 100644
+--- a/libraries/AP_DAL/AP_DAL_Beacon.cpp
++++ b/libraries/AP_DAL/AP_DAL_Beacon.cpp
+@@ -23,7 +23,12 @@ void AP_DAL_Beacon::start_frame()
+ 
+     const log_RBCH old = _RBCH;
+     if (bcon != nullptr) {
++        // Beacon backends may discover anchors after the DAL object is
++        // constructed.  Keep the replay-facing count in step with the live
++        // frontend so EKF beacon fusion can begin when discovery completes.
++        _RBCH.count = bcon->count();
+         _RBCH.get_vehicle_position_ned_returncode = bcon->get_vehicle_position_ned(_RBCH.vehicle_position_ned, _RBCH.accuracy_estimate);
++        _RBCH.vehicle_position_update_ms = bcon->vehicle_position_update_ms();
+         Location loc;
+         _RBCH.get_origin_returncode = bcon->get_origin(loc);
+         _RBCH.enabled = bcon->enabled();
+diff --git a/libraries/AP_DAL/AP_DAL_Beacon.h b/libraries/AP_DAL/AP_DAL_Beacon.h
+index b494d79..8a3a1a2 100644
+--- a/libraries/AP_DAL/AP_DAL_Beacon.h
++++ b/libraries/AP_DAL/AP_DAL_Beacon.h
+@@ -54,6 +54,10 @@ public:
+         return _RBCH.get_vehicle_position_ned_returncode;
+     }
+ 
++    uint32_t vehicle_position_update_ms() const {
++        return _RBCH.vehicle_position_update_ms;
++    }
++
+     // AP_DAL methods:
+     AP_DAL_Beacon();
+ 
+diff --git a/libraries/AP_DAL/LogStructure.h b/libraries/AP_DAL/LogStructure.h
+index 2aa3d28..34acdc7 100644
+--- a/libraries/AP_DAL/LogStructure.h
++++ b/libraries/AP_DAL/LogStructure.h
+@@ -404,6 +404,7 @@ struct log_RMGI {
+ 
+ // @LoggerMessage: RBCH
+ // @Description: Replay Data Beacon Header
++// @Field: Tms: system time of the vehicle position sample
+ // @Field: PX: beacon system estimated vehicle position, North
+ // @Field: PY: beacon system estimated vehicle position, East
+ // @Field: PZ: beacon system estimated vehicle position, Down
+@@ -414,6 +415,7 @@ struct log_RMGI {
+ // @Field: Flags: vehicle_position_ned_returncode,get_origin_returncode,enabled
+ // @Field: NumInst: number of beacons
+ struct log_RBCH {
++    uint32_t vehicle_position_update_ms;
+     Vector3f vehicle_position_ned;
+     float accuracy_estimate;
+     int32_t origin_lat;
+@@ -639,7 +641,7 @@ struct log_RTER {
+     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
+       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
+     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \
+-      "RBCH", "ffffiiiBB", "PX,PY,PZ,AE,OLat,OLng,OAlt,Flags,NumInst", "---------", "---------" },  \
++      "RBCH", "IffffiiiBB", "Tms,PX,PY,PZ,AE,OLat,OLng,OAlt,Flags,NumInst", "smmmm-----", "F0000-----" },  \
+     { LOG_RBCI_MSG, RLOG_SIZE(RBCI),                                   \
+       "RBCI", "IffffBB", "LU,PX,PY,PZ,Dist,H,I", "smmmm-#", "?0000--" }, \
+     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
+diff --git a/libraries/AP_HAL_SITL/SITL_State.cpp b/libraries/AP_HAL_SITL/SITL_State.cpp
+index 08e78f3..e1f9fbe 100644
+--- a/libraries/AP_HAL_SITL/SITL_State.cpp
++++ b/libraries/AP_HAL_SITL/SITL_State.cpp
+@@ -307,7 +307,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
+     // apply engine multiplier to motor defined by the SIM_ENGINE_FAIL parameter
+     for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+         if (engine_fail & (1<<i)) {
+-            if (_vehicle != Rover) {
++            if (_vehicle != Rover && _vehicle != ArduMotorBlimp) {
+                 input.servos[i] = ((input.servos[i]-1000) * engine_mul) + 1000;
+             } else {
+                 input.servos[i] = static_cast<uint16_t>(((input.servos[i] - 1500) * engine_mul) + 1500);
+@@ -341,6 +341,22 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
+         } else {
+             throttle = hover_throttle;
+         }
++    } else if (_vehicle == ArduMotorBlimp) {
++        uint8_t motor_count = 0;
++        uint32_t mask = _sitl->state.motor_mask;
++        uint8_t bit;
++        while ((bit = __builtin_ffs(mask)) != 0) {
++            const uint8_t motor = bit-1;
++            mask &= ~(1U<<motor);
++            if (input.servos[motor] != 0) {
++                const float motor_throttle = constrain_float((input.servos[motor] - 1500) / 500.0f, -1.0f, 1.0f);
++                throttle += fabsf(motor_throttle);
++            }
++            motor_count++;
++        }
++        if (motor_count > 0) {
++            throttle /= motor_count;
++        }
+     } else if (_vehicle == Rover) {
+         if (input.servos[2] != 0) {
+             const uint16_t servo2 = static_cast<uint16_t>(constrain_int16(input.servos[2], 1000, 2000));
+diff --git a/libraries/AP_HAL_SITL/SITL_State_common.h b/libraries/AP_HAL_SITL/SITL_State_common.h
+index cbf6225..00690c9 100644
+--- a/libraries/AP_HAL_SITL/SITL_State_common.h
++++ b/libraries/AP_HAL_SITL/SITL_State_common.h
+@@ -75,7 +75,8 @@ public:
+         Rover,
+         ArduPlane,
+         ArduSub,
+-        Blimp
++        Blimp,
++        ArduMotorBlimp
+     };
+ 
+     // create a simulated serial device; type of device is given by
+diff --git a/libraries/AP_HAL_SITL/SITL_cmdline.cpp b/libraries/AP_HAL_SITL/SITL_cmdline.cpp
+index c0dc50b..b2e7bf1 100644
+--- a/libraries/AP_HAL_SITL/SITL_cmdline.cpp
++++ b/libraries/AP_HAL_SITL/SITL_cmdline.cpp
+@@ -38,6 +38,7 @@
+ #include <SITL/SIM_Webots_Python.h>
+ #include <SITL/SIM_JSON.h>
+ #include <SITL/SIM_Blimp.h>
++#include <SITL/SIM_MotorBlimp.h>
+ #include <SITL/SIM_NoVehicle.h>
+ #include <SITL/SIM_StratoBlimp.h>
+ 
+@@ -209,6 +210,9 @@ static const struct {
+ #if AP_SIM_STRATOBLIMP_ENABLED
+     { "stratoblimp",        StratoBlimp::create },
+ #endif
++#if AP_SIM_MOTORBLIMP_ENABLED
++    { "motorblimp",         MotorBlimp::create },
++#endif
+ };
+ 
+ void SITL_State::_set_signal_handlers(void) const
+@@ -683,6 +687,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
+         _vehicle = ArduSub;
+     } else if (strcmp(vehicle_str, "Blimp") == 0) {
+         _vehicle = Blimp;
++    } else if (strcmp(vehicle_str, "ArduMotorBlimp") == 0) {
++        _vehicle = ArduMotorBlimp;
+     } else {
+         _vehicle = ArduPlane;
+     }
+diff --git a/libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp b/libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp
+index ac6cf83..463590f 100644
+--- a/libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp
++++ b/libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp
+@@ -990,10 +990,15 @@ void NavEKF3_core::readRngBcnData()
+     Vector3f bp;
+     float bperr;
+     if (beacon->get_vehicle_position_ned(bp, bperr)) {
+-        rngBcn.last3DmeasTime_ms = imuSampleTime_ms;
++        const uint32_t update_ms = beacon->vehicle_position_update_ms();
++        if (update_ms != rngBcn.last3DmeasUpdate_ms) {
++            rngBcn.last3DmeasUpdate_ms = update_ms;
++            rngBcn.last3DmeasTime_ms = imuSampleTime_ms;
++            rngBcn.vehiclePosNED = bp.toftype();
++            rngBcn.vehiclePosErr = bperr;
++            rngBcn.directPosDataToFuse = true;
++        }
+     }
+-    rngBcn.vehiclePosNED = bp.toftype();
+-    rngBcn.vehiclePosErr = bperr;
+ 
+     // Check if the range beacon data can be used to align the vehicle position
+     if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (rngBcn.vehiclePosErr < 1.0f) && rngBcn.alignmentCompleted) {
+diff --git a/libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp b/libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp
+index b005c7d..1f7dc0c 100644
+--- a/libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp
++++ b/libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp
+@@ -1209,6 +1209,15 @@ void NavEKF3_core::selectHeightForFusion()
+     bool rangeFinderDataIsFresh = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
+ #if EK3_FEATURE_EXTERNAL_NAV
+     const bool extNavDataIsFresh = (imuSampleTime_ms - extNavMeasTime_ms < 500);
++#endif
++#if EK3_FEATURE_BEACON_FUSION
++    // Some beacon backends provide a complete vehicle position in addition to
++    // individual anchor ranges.  Use the direct position for height because a
++    // coplanar anchor constellation cannot resolve the two possible range-only
++    // height solutions reliably.
++    const bool rngBcn3DDataIsFresh = (imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 500) &&
++                                     (rngBcn.vehiclePosErr > 0.0f) &&
++                                     (rngBcn.vehiclePosErr < 10.0f);
+ #endif
+     // select height source
+     if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::NONE)) {
+@@ -1262,7 +1271,9 @@ void NavEKF3_core::selectHeightForFusion()
+     } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) < 500) && validOrigin && gpsAccuracyGood) {
+         activeHgtSource = AP_NavEKF_Source::SourceZ::GPS;
+ #if EK3_FEATURE_BEACON_FUSION
+-    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BEACON) && validOrigin && rngBcn.goodToAlign) {
++    } else if ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BEACON) &&
++               rngBcn3DDataIsFresh && validOrigin && rngBcn.goodToAlign &&
++               (PV_AidingMode == AID_ABSOLUTE)) {
+         activeHgtSource = AP_NavEKF_Source::SourceZ::BEACON;
+ #endif
+ #if EK3_FEATURE_EXTERNAL_NAV
+@@ -1275,7 +1286,8 @@ void NavEKF3_core::selectHeightForFusion()
+     bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
+     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000 || !gpsAccuracyGoodForAltitude));
+ #if EK3_FEATURE_BEACON_FUSION
+-    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcn.dataDelayed.time_ms) > 2000));
++    bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) &&
++                          ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms) > 2000));
+ #endif
+     bool fallback_to_baro =
+         lostRngHgt
+@@ -1327,6 +1339,18 @@ void NavEKF3_core::selectHeightForFusion()
+         fuseHgtData = true;
+     } else
+ #endif // EK3_FEATURE_EXTERNAL_NAV
++#if EK3_FEATURE_BEACON_FUSION
++    if (rngBcn3DDataIsFresh && rngBcn.directPosDataToFuse &&
++        (activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON)) {
++        // vehiclePosNED.z is already a down-positive position relative to the
++        // beacon origin, which is also installed as the EKF origin.
++        hgtMea = -rngBcn.vehiclePosNED.z;
++        velPosObs[5] = rngBcn.vehiclePosNED.z;
++        posDownObsNoise = sq(constrain_ftype(rngBcn.vehiclePosErr, 0.1f, 10.0f));
++        fuseHgtData = true;
++        rngBcn.directPosDataToFuse = false;
++    } else
++#endif
+         if (rangeDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+         // using range finder data
+         // correct for tilt using a flat earth model
+diff --git a/libraries/AP_NavEKF3/AP_NavEKF3_RngBcnFusion.cpp b/libraries/AP_NavEKF3/AP_NavEKF3_RngBcnFusion.cpp
+index fc79a6e..ff0d249 100644
+--- a/libraries/AP_NavEKF3/AP_NavEKF3_RngBcnFusion.cpp
++++ b/libraries/AP_NavEKF3/AP_NavEKF3_RngBcnFusion.cpp
+@@ -19,6 +19,8 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
+     vehiclePosNED.zero();
+     vehiclePosErr = 1.0f;
+     last3DmeasTime_ms = 0;
++    last3DmeasUpdate_ms = 0;
++    directPosDataToFuse = false;
+     goodToAlign = false;
+     lastChecked = 0;
+     receiverPos.zero();
+@@ -103,6 +105,11 @@ void NavEKF3_core::FuseRngBcn()
+     ftype bcn_pd;
+     const ftype R_BCN = sq(MAX(rngBcn.dataDelayed.rngErr , 0.1f));
+     ftype rngPred;
++    const bool direct3DHeightIsFresh =
++        (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BEACON) &&
++        (imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 500) &&
++        (rngBcn.vehiclePosErr > 0.0f) &&
++        (rngBcn.vehiclePosErr < 10.0f);
+ 
+     // health is set bad until test passed
+     rngBcn.health = false;
+@@ -149,7 +156,7 @@ void NavEKF3_core::FuseRngBcn()
+         // are at the same height as the flight vehicle when calculating the observation derivatives
+         // and Kalman gains
+         // TODO  - less hacky way of achieving this, preferably using an alternative derivation
+-        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) {
++        if ((activeHgtSource != AP_NavEKF_Source::SourceZ::BEACON) || direct3DHeightIsFresh) {
+             t2 = 0.0f;
+         }
+         H_BCN[9] = -t2*t9;
+@@ -209,7 +216,7 @@ void NavEKF3_core::FuseRngBcn()
+         }
+ 
+         // only allow the range observations to modify the vertical states if we are using it as a height reference
+-        if (activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) {
++        if ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && !direct3DHeightIsFresh) {
+             Kfusion[6] = -t26*(P[6][7]*t4*t9+P[6][8]*t3*t9+P[6][9]*t2*t9);
+             Kfusion[9] = -t26*(t10+P[9][7]*t4*t9+P[9][8]*t3*t9);
+         } else {
+diff --git a/libraries/AP_NavEKF3/AP_NavEKF3_core.h b/libraries/AP_NavEKF3/AP_NavEKF3_core.h
+index 7f70f9a..e8b0407 100644
+--- a/libraries/AP_NavEKF3/AP_NavEKF3_core.h
++++ b/libraries/AP_NavEKF3/AP_NavEKF3_core.h
+@@ -1402,6 +1402,8 @@ private:
+         Vector3F vehiclePosNED;       // NED position estimate from the beacon system (NED)
+         ftype vehiclePosErr;          // estimated position error from the beacon system (m)
+         uint32_t last3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
++        uint32_t last3DmeasUpdate_ms; // source timestamp of the last accepted 3D fix
++        bool directPosDataToFuse;     // true once for each new direct position sample
+         bool goodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
+         uint8_t lastChecked;          // index of the last range beacon checked for data
+         Vector3F receiverPos;               // receiver NED position (m) - alignment 3 state filter
+diff --git a/libraries/AP_Vehicle/AP_Vehicle_Type.h b/libraries/AP_Vehicle/AP_Vehicle_Type.h
+index 3636f23..14ba72c 100644
+--- a/libraries/AP_Vehicle/AP_Vehicle_Type.h
++++ b/libraries/AP_Vehicle/AP_Vehicle_Type.h
+@@ -33,6 +33,7 @@
+ #define APM_BUILD_AP_Bootloader  11
+ #define APM_BUILD_Blimp      12
+ #define APM_BUILD_Heli       13
++#define APM_BUILD_ArduMotorBlimp 14
+ // @LoggerEnumEnd
+ 
+ #ifdef APM_BUILD_DIRECTORY
+diff --git a/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp b/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp
+index 38fdc1f..cad0368 100644
+--- a/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp
++++ b/libraries/GCS_MAVLink/GCS_MAVLink_Parameters.cpp
+@@ -57,6 +57,17 @@ const struct AP_Param::GroupInfo *GCS::_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
+ #define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 1
+ #define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 10
+ #define AP_MAV_DEFAULT_STREAM_RATE_ADSB 5
++#elif APM_BUILD_TYPE(APM_BUILD_ArduMotorBlimp)
++#define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0
++#define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 1
++#define AP_MAV_DEFAULT_STREAM_RATE_RC_CHAN 10
++#define AP_MAV_DEFAULT_STREAM_RATE_RAW_CTRL 0
++#define AP_MAV_DEFAULT_STREAM_RATE_POSITION 0
++#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA1 10
++#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA2 0
++#define AP_MAV_DEFAULT_STREAM_RATE_EXTRA3 0
++#define AP_MAV_DEFAULT_STREAM_RATE_PARAMS 0
++#define AP_MAV_DEFAULT_STREAM_RATE_ADSB 0
+ #elif APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Blimp) || APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+ #define AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS 0
+ #define AP_MAV_DEFAULT_STREAM_RATE_EXT_STAT 0
+diff --git a/libraries/SITL/SIM_MotorBlimp.cpp b/libraries/SITL/SIM_MotorBlimp.cpp
+new file mode 100644
+index 0000000..3ce4822
+--- /dev/null
++++ b/libraries/SITL/SIM_MotorBlimp.cpp
+@@ -0,0 +1,286 @@
++/*
++   This program is free software: you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation, either version 3 of the License, or
++   (at your option) any later version.
++*/
++
++#include "SIM_MotorBlimp.h"
++
++#if AP_SIM_MOTORBLIMP_ENABLED
++
++#include <AP_Math/AP_Math.h>
++
++using namespace SITL;
++
++const AP_Param::GroupInfo MotorBlimp::var_info[] = {
++    // @Param: MASS
++    // @DisplayName: Airship mass
++    // @Description: Total airship mass used by the basic model
++    // @Units: kg
++    // @Range: 0.01 100
++    AP_GROUPINFO("MASS", 1, MotorBlimp, mass_kg, 0.145f),
++
++    // @Param: LENGTH
++    // @DisplayName: Hull length
++    // @Description: Length of the cylindrical hull
++    // @Units: m
++    // @Range: 0.1 100
++    AP_GROUPINFO("LENGTH", 2, MotorBlimp, length, 1.0f),
++
++    // @Param: RADIUS
++    // @DisplayName: Hull radius
++    // @Description: Radius of the cylindrical hull and motor mounting ring
++    // @Units: m
++    // @Range: 0.01 20
++    AP_GROUPINFO("RADIUS", 3, MotorBlimp, radius, 0.2f),
++
++    // @Param: THR_MAX
++    // @DisplayName: Maximum motor thrust
++    // @Description: Maximum static thrust produced by one motor in either direction
++    // @Units: N
++    // @Range: 0 1000
++    AP_GROUPINFO("THR_MAX", 4, MotorBlimp, thrust_max, 0.15f),
++
++    // @Param: Q_MAX
++    // @DisplayName: Maximum reaction torque
++    // @Description: Propeller reaction torque about body X at full command
++    // @Units: Nm
++    // @Range: 0 100
++    AP_GROUPINFO("Q_MAX", 5, MotorBlimp, reaction_torque_max, 0.0003f),
++
++    // @Param: BUOY
++    // @DisplayName: Buoyancy ratio
++    // @Description: Buoyant force divided by vehicle weight. One gives neutral buoyancy
++    // @Range: 0 2
++    AP_GROUPINFO("BUOY", 6, MotorBlimp, buoyancy_ratio, 1.0f),
++
++    // @Param: CB_Z
++    // @DisplayName: Centre of buoyancy height
++    // @Description: Positive distance that the centre of buoyancy is above the centre of mass
++    // @Units: m
++    // @Range: 0 10
++    AP_GROUPINFO("CB_Z", 7, MotorBlimp, cb_height, 0.05f),
++
++    // @Param: CDA_X
++    // @DisplayName: Axial drag area
++    // @Description: Drag coefficient times reference area along body X
++    // @Units: m^2
++    // @Range: 0 1000
++    AP_GROUPINFO("CDA_X", 8, MotorBlimp, cda_x, 0.06f),
++
++    // @Param: CDA_Y
++    // @DisplayName: Lateral drag area
++    // @Description: Drag coefficient times reference area along body Y
++    // @Units: m^2
++    // @Range: 0 1000
++    AP_GROUPINFO("CDA_Y", 9, MotorBlimp, cda_y, 0.35f),
++
++    // @Param: CDA_Z
++    // @DisplayName: Vertical drag area
++    // @Description: Drag coefficient times reference area along body Z
++    // @Units: m^2
++    // @Range: 0 1000
++    AP_GROUPINFO("CDA_Z", 10, MotorBlimp, cda_z, 0.35f),
++
++    // @Param: MOI_X
++    // @DisplayName: Roll moment of inertia
++    // @Description: Roll moment of inertia. Zero derives it from a solid cylinder
++    // @Units: kgm^2
++    // @Range: 0 10000
++    AP_GROUPINFO("MOI_X", 11, MotorBlimp, moi_x, 0.0f),
++
++    // @Param: MOI_Y
++    // @DisplayName: Pitch moment of inertia
++    // @Description: Pitch moment of inertia. Zero derives it from a solid cylinder
++    // @Units: kgm^2
++    // @Range: 0 10000
++    AP_GROUPINFO("MOI_Y", 12, MotorBlimp, moi_y, 0.0f),
++
++    // @Param: MOI_Z
++    // @DisplayName: Yaw moment of inertia
++    // @Description: Yaw moment of inertia. Zero derives it from a solid cylinder
++    // @Units: kgm^2
++    // @Range: 0 10000
++    AP_GROUPINFO("MOI_Z", 13, MotorBlimp, moi_z, 0.0f),
++
++    // @Param: RDAMP_X
++    // @DisplayName: Quadratic roll damping
++    // @Description: Quadratic angular damping coefficient about body X
++    // @Range: 0 10000
++    AP_GROUPINFO("RDAMP_X", 14, MotorBlimp, rotational_damping_x, 0.0005f),
++
++    // @Param: RDAMP_Y
++    // @DisplayName: Quadratic pitch damping
++    // @Description: Quadratic angular damping coefficient about body Y
++    // @Range: 0 10000
++    AP_GROUPINFO("RDAMP_Y", 15, MotorBlimp, rotational_damping_y, 0.015f),
++
++    // @Param: RDAMP_Z
++    // @DisplayName: Quadratic yaw damping
++    // @Description: Quadratic angular damping coefficient about body Z
++    // @Range: 0 10000
++    AP_GROUPINFO("RDAMP_Z", 16, MotorBlimp, rotational_damping_z, 0.015f),
++
++    // @Param: RPM_MAX
++    // @DisplayName: Maximum motor RPM
++    // @Description: Motor RPM reported by SITL at full command
++    // @Units: RPM
++    // @Range: 0 100000
++    AP_GROUPINFO("RPM_MAX", 17, MotorBlimp, rpm_max, 12000.0f),
++
++    AP_GROUPEND
++};
++
++MotorBlimp::MotorBlimp(const char *frame_str) :
++    Aircraft(frame_str)
++{
++    AP::sitl()->models.motorblimp_ptr = this;
++    AP_Param::setup_object_defaults(this, var_info);
++
++    Aircraft::mass = MAX(mass_kg.get(), 0.001f);
++    external_payload_mass = 0.0f;
++    frame_height = MAX(radius.get(), 0.01f);
++    ground_behavior = GROUND_BEHAVIOR_NONE;
++    lock_step_scheduled = true;
++    use_smoothing = false;
++
++    // The first four PWM outputs are the four longitudinal motors.
++    motor_mask = 0x0F;
++    for (uint8_t i = 0; i < ARRAY_SIZE(rpm); i++) {
++        rpm[i] = 0.0f;
++    }
++
++    // Leave voltage/current at zero so SITL_State supplies its generic battery
++    // model using the absolute bidirectional motor demand.
++    battery_voltage = 0.0f;
++    battery_current = 0.0f;
++}
++
++bool MotorBlimp::on_ground() const
++{
++    // Aircraft::update_dynamics() normally keeps position clamped to the
++    // ground until a single simulation step moves the complete frame-height
++    // tolerance.  At the 1200 Hz model rate that made a light, neutrally
++    // buoyant airship accumulate roughly 1.2 m/s upward velocity while its
++    // position remained pinned.  Permit an upward-moving hull to leave the
++    // floor immediately, while retaining the normal collision clamp during a
++    // descent.
++    return Aircraft::on_ground() && velocity_ef.z >= 0.0f;
++}
++
++Vector3f MotorBlimp::get_moment_of_inertia(float total_mass) const
++{
++    const float r = MAX(radius.get(), 0.001f);
++    const float l = MAX(length.get(), 0.001f);
++
++    // Solid-cylinder estimates. Explicit non-zero parameters override them.
++    const float cylinder_x = 0.5f * total_mass * sq(r);
++    const float cylinder_yz = total_mass * (3.0f * sq(r) + sq(l)) / 12.0f;
++
++    return Vector3f{
++        is_positive(moi_x.get()) ? moi_x.get() : cylinder_x,
++        is_positive(moi_y.get()) ? moi_y.get() : cylinder_yz,
++        is_positive(moi_z.get()) ? moi_z.get() : cylinder_yz
++    };
++}
++
++void MotorBlimp::calculate_forces(const struct sitl_input &input,
++                                  Vector3f &rot_accel,
++                                  Vector3f &body_accel)
++{
++    Aircraft::mass = MAX(mass_kg.get(), 0.001f);
++    frame_height = MAX(radius.get(), 0.01f);
++
++    const float total_mass = MAX(gross_mass(), 0.001f);
++    const float r = MAX(radius.get(), 0.001f);
++    const float max_thrust = MAX(thrust_max.get(), 0.0f);
++    const float max_reaction_torque = MAX(reaction_torque_max.get(), 0.0f);
++
++    const Vector3f motor_position[4] {
++        Vector3f{0.0f,  0.0f, -r}, // M1: top
++        Vector3f{0.0f, +r,     0.0f}, // M2: right
++        Vector3f{0.0f,  0.0f, +r}, // M3: bottom
++        Vector3f{0.0f, -r,     0.0f}, // M4: left
++    };
++    const float reaction_sign[4] {+1.0f, -1.0f, +1.0f, -1.0f};
++
++    Vector3f force_body;
++    Vector3f torque_body;
++
++    for (uint8_t i = 0; i < 4; i++) {
++        const float command = constrain_float(filtered_servo_angle(input, i), -1.0f, 1.0f);
++        // The mixer output is a normalised signed thrust request.  Keep the
++        // SITL actuator linear in that contract; applying command squared here
++        // would make low autonomous demands far weaker than the controller's
++        // acceleration model predicts.
++        const Vector3f motor_force{max_thrust * command, 0.0f, 0.0f};
++
++        force_body += motor_force;
++        torque_body += motor_position[i] % motor_force;
++        torque_body.x += reaction_sign[i] * max_reaction_torque * command;
++        rpm[i] = MAX(rpm_max.get(), 0.0f) * fabsf(command);
++    }
++
++    // Constant buoyancy is intentional for the indoor/low-altitude model. The
++    // Aircraft base class adds gravity later in update_dynamics().
++    const float buoyant_force = MAX(buoyancy_ratio.get(), 0.0f) * Aircraft::mass * GRAVITY_MSS;
++    const Vector3f buoyancy_earth{0.0f, 0.0f, -buoyant_force};
++    const Vector3f buoyancy_body = dcm.transposed() * buoyancy_earth;
++    force_body += buoyancy_body;
++
++    const Vector3f centre_of_buoyancy{0.0f, 0.0f, -MAX(cb_height.get(), 0.0f)};
++    torque_body += centre_of_buoyancy % buoyancy_body;
++
++    // Anisotropic quadratic drag of the cylindrical hull.
++    const float rho = get_air_density(location.alt * 0.01f);
++    force_body += Vector3f{
++        -0.5f * rho * MAX(cda_x.get(), 0.0f) * velocity_air_bf.x * fabsf(velocity_air_bf.x),
++        -0.5f * rho * MAX(cda_y.get(), 0.0f) * velocity_air_bf.y * fabsf(velocity_air_bf.y),
++        -0.5f * rho * MAX(cda_z.get(), 0.0f) * velocity_air_bf.z * fabsf(velocity_air_bf.z)
++    };
++
++    torque_body += Vector3f{
++        -MAX(rotational_damping_x.get(), 0.0f) * gyro.x * fabsf(gyro.x),
++        -MAX(rotational_damping_y.get(), 0.0f) * gyro.y * fabsf(gyro.y),
++        -MAX(rotational_damping_z.get(), 0.0f) * gyro.z * fabsf(gyro.z)
++    };
++
++    body_accel = force_body / total_mass;
++
++    // Euler rigid-body equation: I*w_dot = torque - w x (I*w).
++    const Vector3f inertia = get_moment_of_inertia(total_mass);
++    const Vector3f angular_momentum{
++        inertia.x * gyro.x,
++        inertia.y * gyro.y,
++        inertia.z * gyro.z
++    };
++    const Vector3f gyroscopic_torque = gyro % angular_momentum;
++    const Vector3f net_torque = torque_body - gyroscopic_torque;
++
++    rot_accel = Vector3f{
++        net_torque.x / inertia.x,
++        net_torque.y / inertia.y,
++        net_torque.z / inertia.z
++    };
++}
++
++void MotorBlimp::update(const struct sitl_input &input)
++{
++    update_wind(input);
++
++    Vector3f rot_accel;
++    calculate_forces(input, rot_accel, accel_body);
++
++    add_shove_forces(rot_accel, accel_body);
++    add_twist_forces(rot_accel);
++    add_external_forces(accel_body);
++
++    update_dynamics(rot_accel);
++    update_external_payload(input);
++    update_position();
++    time_advance();
++    update_mag_field_bf();
++}
++
++#endif // AP_SIM_MOTORBLIMP_ENABLED
+diff --git a/libraries/SITL/SIM_MotorBlimp.h b/libraries/SITL/SIM_MotorBlimp.h
+new file mode 100644
+index 0000000..6f0dc73
+--- /dev/null
++++ b/libraries/SITL/SIM_MotorBlimp.h
+@@ -0,0 +1,68 @@
++/*
++   This program is free software: you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation, either version 3 of the License, or
++   (at your option) any later version.
++*/
++
++#pragma once
++
++#include "SIM_config.h"
++
++#if AP_SIM_MOTORBLIMP_ENABLED
++
++#include "SIM_Aircraft.h"
++
++#include <AP_Param/AP_Param.h>
++
++namespace SITL {
++
++/*
++  Six degree-of-freedom model for a neutrally buoyant cylindrical airship.
++
++  All four reversible propellers point along body X.  Their positions around
++  the circular hull provide pitch and yaw moments, while alternating propeller
++  reaction torques provide roll control.
++ */
++class MotorBlimp : public Aircraft {
++public:
++    explicit MotorBlimp(const char *frame_str);
++
++    void update(const struct sitl_input &input) override;
++
++    static Aircraft *create(const char *frame_str)
++    {
++        return NEW_NOTHROW MotorBlimp(frame_str);
++    }
++
++    static const AP_Param::GroupInfo var_info[];
++
++private:
++    void calculate_forces(const struct sitl_input &input,
++                          Vector3f &rot_accel,
++                          Vector3f &body_accel);
++    Vector3f get_moment_of_inertia(float total_mass) const;
++    bool on_ground() const override;
++
++    AP_Float mass_kg;
++    AP_Float length;
++    AP_Float radius;
++    AP_Float thrust_max;
++    AP_Float reaction_torque_max;
++    AP_Float buoyancy_ratio;
++    AP_Float cb_height;
++    AP_Float cda_x;
++    AP_Float cda_y;
++    AP_Float cda_z;
++    AP_Float moi_x;
++    AP_Float moi_y;
++    AP_Float moi_z;
++    AP_Float rotational_damping_x;
++    AP_Float rotational_damping_y;
++    AP_Float rotational_damping_z;
++    AP_Float rpm_max;
++};
++
++} // namespace SITL
++
++#endif // AP_SIM_MOTORBLIMP_ENABLED
+diff --git a/libraries/SITL/SIM_config.h b/libraries/SITL/SIM_config.h
+index a07b6fd..e8f3072 100644
+--- a/libraries/SITL/SIM_config.h
++++ b/libraries/SITL/SIM_config.h
+@@ -377,6 +377,10 @@
+ #define AP_SIM_STRATOBLIMP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+ #endif // AP_SIM_STRATOBLIMP_ENABLED
+ 
++#ifndef AP_SIM_MOTORBLIMP_ENABLED
++#define AP_SIM_MOTORBLIMP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
++#endif // AP_SIM_MOTORBLIMP_ENABLED
++
+ #ifndef AP_SIM_WEBOTS_ENABLED
+ #define AP_SIM_WEBOTS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+ #endif  // AP_SIM_WEBOTS_ENABLED
+diff --git a/libraries/SITL/SITL.cpp b/libraries/SITL/SITL.cpp
+index b12b1c8..2b80ab7 100644
+--- a/libraries/SITL/SITL.cpp
++++ b/libraries/SITL/SITL.cpp
+@@ -38,6 +38,7 @@
+ #endif // SFML_JOYSTICK
+ 
+ #include "SIM_StratoBlimp.h"
++#include "SIM_MotorBlimp.h"
+ #include "SIM_Glider.h"
+ #include "SIM_FlightAxis.h"
+ 
+@@ -1562,6 +1563,12 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
+     AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
+ #endif  // AP_SIM_AIS_ENABLED
+ 
++#if AP_SIM_MOTORBLIMP_ENABLED
++    // @Group: MB_
++    // @Path: ./SIM_MotorBlimp.cpp
++    AP_SUBGROUPPTR(motorblimp_ptr, "MB_", 8, SIM::ModelParm, MotorBlimp),
++#endif // AP_SIM_MOTORBLIMP_ENABLED
++
+     AP_GROUPEND
+ };
+ 
+diff --git a/libraries/SITL/SITL.h b/libraries/SITL/SITL.h
+index c548c31..c2ba3de 100644
+--- a/libraries/SITL/SITL.h
++++ b/libraries/SITL/SITL.h
+@@ -53,6 +53,7 @@ struct float_array {
+ };
+ 
+ class StratoBlimp;
++class MotorBlimp;
+ class Glider;
+ class FlightAxis;
+ 
+@@ -372,6 +373,9 @@ public:
+ #if AP_SIM_STRATOBLIMP_ENABLED
+         StratoBlimp *stratoblimp_ptr;
+ #endif
++#if AP_SIM_MOTORBLIMP_ENABLED
++        MotorBlimp *motorblimp_ptr;
++#endif
+ #if AP_SIM_SHIP_ENABLED
+         ShipSim shipsim;
+ #endif
+diff --git a/wscript b/wscript
+index 5d4b6a7..86d22f3 100644
+--- a/wscript
++++ b/wscript
+@@ -709,7 +709,7 @@ def list_ap_periph_boards(ctx):
+ def ap_periph_boards(ctx):
+     return boards.get_ap_periph_boards()
+ 
+-vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'plane', 'rover', 'sub']
++vehicles = ['antennatracker', 'blimp', 'copter', 'heli', 'motorblimp', 'plane', 'rover', 'sub']
+ 
+ def generate_tasklist(ctx, do_print=True):
+     boardlist = boards.get_boards_names()
