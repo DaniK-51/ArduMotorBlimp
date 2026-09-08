@@ -24,25 +24,28 @@ SERVO_BLH_OTYPE 5
 SERVO_BLH_3DMASK 15
 SERVO_DSHOT_ESC 2
 SERVO_BLH_BDMASK 0
-# outputs 1 and 2 spin clockwise viewed from the nose, 3 and 4 counter-clockwise
-SERVO_BLH_RVMASK 3
+# ESCs spin clockwise natively (viewed from the nose); reverse M2 and M4 so the
+# diagonals match: M1+M3 clockwise, M2+M4 counter-clockwise
+SERVO_BLH_RVMASK 10
 SERVO1_FUNCTION 33
 SERVO2_FUNCTION 34
 SERVO3_FUNCTION 35
 SERVO4_FUNCTION 36
 
-# --- Mixer: M1 bottom-right, M2 top-left, M3 bottom-left, M4 top-right (viewed from the nose) ---
+# --- Mixer (viewed from the nose): M1 bottom-right, M2 bottom-left, M3 top-left, M4 top-right ---
+# roll by spin direction (clockwise from the nose = +roll): M1/M3 +1, M2/M4 -1
+# pitch/yaw by position: top -> pitch -, bottom -> +, right -> yaw -, left -> +, cos45 = 0.7071
 MIX_M1_FWD 1.0
 MIX_M1_RLL 1.0
 MIX_M1_PIT 0.7071
 MIX_M1_YAW -0.7071
 MIX_M2_FWD 1.0
-MIX_M2_RLL 1.0
-MIX_M2_PIT -0.7071
+MIX_M2_RLL -1.0
+MIX_M2_PIT 0.7071
 MIX_M2_YAW 0.7071
 MIX_M3_FWD 1.0
-MIX_M3_RLL -1.0
-MIX_M3_PIT 0.7071
+MIX_M3_RLL 1.0
+MIX_M3_PIT -0.7071
 MIX_M3_YAW 0.7071
 MIX_M4_FWD 1.0
 MIX_M4_RLL -1.0
