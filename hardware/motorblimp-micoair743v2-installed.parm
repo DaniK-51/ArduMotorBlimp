@@ -70,3 +70,6 @@ AHRS_ORIENTATION 5
 
 # --- Motor output deadband (fraction of full thrust snapped to exact neutral) ---
 MIX_DEADBAND 0.02
+
+# --- Hard motor output cap for tethered/first flights (1.0 = no cap) ---
+MIX_OUT_MAX 0.5

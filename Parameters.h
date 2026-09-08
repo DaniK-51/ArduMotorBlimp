@@ -127,6 +127,7 @@ public:
     // Maximum accepted direct UWB position error for autonomous flight.
     AP_Float uwb_accuracy_max_m;
     AP_Float mix_deadband;
+    AP_Float mix_output_max;
 
     // Body-rate PID controllers.  Outputs are normalised torque requests.
     AC_PID rate_roll_pid{0.25f, 0.05f, 0.003f, 0.0f, 0.30f, 10.0f, 10.0f, 5.0f};

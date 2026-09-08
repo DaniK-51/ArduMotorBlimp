@@ -574,9 +574,14 @@ void ArduMotorBlimp::motors_output()
     // else is at least minimum throttle.  Snap small commands to neutral so
     // the attitude loops cannot keep the motors idling around zero.
     const float deadband = constrain_float(g2.mix_deadband.get(), 0.0f, 0.3f);
+    // Hard cap on every output, after allocation: a bench safety net that
+    // neither the sticks nor a wound-up attitude loop can exceed.
+    const float out_max = constrain_float(g2.mix_output_max.get(), 0.05f, 1.0f);
     const auto motor_output = [&](float command) {
-        return (enabled && fabsf(command) >= deadband) ? command * MOTOR_SCALE
-                                                        : 0.0f;
+        if (!enabled || fabsf(command) < deadband) {
+            return 0.0f;
+        }
+        return constrain_float(command, -out_max, out_max) * MOTOR_SCALE;
     };
 
     SRV_Channels::set_output_scaled(

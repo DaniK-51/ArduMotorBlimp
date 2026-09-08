@@ -387,6 +387,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIX_DEADBAND", 44, ParametersG2, mix_deadband, 0.02f),
 
+    // @Param: MIX_OUT_MAX
+    // @DisplayName: Motor output limit
+    // @Description: Hard cap on every motor output as a fraction of full thrust in either direction, applied after the allocator. Neither the sticks nor the attitude loops can drive a motor beyond it. Use a low value (0.3-0.5) for tethered and first flights.
+    // @Range: 0.05 1
+    // @Increment: 0.05
+    // @User: Standard
+    AP_GROUPINFO("MIX_OUT_MAX", 45, ParametersG2, mix_output_max, 1.0f),
+
     AP_GROUPEND
 };
 
